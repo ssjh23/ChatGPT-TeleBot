@@ -1,48 +1,60 @@
 
 import logging
-from chatgpt import Chat
-from telegram import Update, Bot
-from telegram.ext import filters, MessageHandler, ApplicationBuilder, CommandHandler, ContextTypes, Application
+from enum import Enum
+from chatgpt import ChatGPT
+from telegram import (
+    Update, 
+    Bot, 
+    InlineKeyboardButton, 
+    InlineKeyboardMarkup
+)
+from telegram.ext import (
+    filters, 
+    MessageHandler, 
+    ApplicationBuilder, 
+    ConversationHandler,
+    CommandHandler, 
+    CallbackQueryHandler,
+    ContextTypes, 
+    Application
+)
 from dotenv import load_dotenv
 import os
 import openai
-max_tokens = 4097
+
+global application
 application = None
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
+# State definitions for top level conversation
+SELECTING_ACTION, IMAGE_GENERATION, TRANSCRIPTIONS= map(chr, range(3))
+CHATGPT = "CHATGPT"
+MAIN_MENU = "MAIN_MENU"
+# State definitions for second level conversation
+END = ConversationHandler.END
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(update.effective_chat.id)
-    global application
-    chat = Chat(update.effective_chat.id, application)
-    chat.run()
-    # await context.bot.send_message(chat_id=update.effective_chat.id, text="I'm a bot, please talk to me!")
+    text = "Welcome to your personal OpenAI bot"
+    # Sends a message with three inline buttons attached
+    keyboard = [
+        [
+            InlineKeyboardButton("ChatGPT", callback_data=CHATGPT),
+            InlineKeyboardButton("Image Generation", callback_data= "2"),
+        ],
+        [InlineKeyboardButton("Transcriptions", callback_data= "3")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(text=text, reply_markup=reply_markup)
+    return SELECTING_ACTION
 
 
-# async def chatgpt(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     print("HERE")
-#     messages.append({"role":"user", "content": update.message.text})
-#     print(messages)
-#     # Call the OpenAI API to generate a response
-#     global max_tokens
-#     try:
-#         response = openai.ChatCompletion.create(
-#             model="gpt-3.5-turbo",
-#             messages=messages,
-#             max_tokens=max_tokens,
-#             n=1,
-#             stop=None,
-#             temperature=0.5,
-#         )
-#         print(response)
-#         # Send the response back to the user
-#         messages.append({"role":"assistant", "content": response.choices[0].message.content})
-#         max_tokens - response.usage.total_tokens
-#         await context.bot.send_message(chat_id=update.effective_chat.id, text=response.choices[0].message.content)
-#     except openai.error.InvalidRequestError as e:
-#         print(e)
+async def start_chat_gpt(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(application)
+    ChatGPT_instance = ChatGPT(update.effective_chat.id, application)
+    await ChatGPT_instance.run(update, context)
 
 if __name__ == '__main__':
     load_dotenv('/Users/seansoo/Documents/github-repos/ChatGPT-TeleBot/.env')
@@ -50,9 +62,14 @@ if __name__ == '__main__':
     # Set up the OpenAI API
     openai.api_key = os.getenv('OPENAI_TOKEN')
     application = ApplicationBuilder().token(token).build()
-    start_handler = CommandHandler('start', start)
-    # gpt_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), chatgpt)
-    application.add_handler(start_handler)
-    # application.add_handler(gpt_handler)
+    bot_conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', start)],
+        states={
+            MAIN_MENU: [CallbackQueryHandler(start, pattern="^"+str(END)+"$")],
+            SELECTING_ACTION:[CallbackQueryHandler(start_chat_gpt, pattern="^"+CHATGPT+"$")]
+        },
+        fallbacks=[CommandHandler('start', start)]
+    )
+    application.add_handler(bot_conv_handler)
     application.run_polling()
     
