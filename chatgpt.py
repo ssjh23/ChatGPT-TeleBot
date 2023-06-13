@@ -24,6 +24,7 @@ class ChatGPT:
         self.application = application
         self.messages = []
         self.max_tokens = 4000
+        self.last_back_message = None
 
     async def run(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chatgpt_new_chat_welcome_text = "You are now on a new chat on chatgpt! Just start typing as you would using chatgpt"
@@ -42,6 +43,8 @@ class ChatGPT:
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.gpt_message_handler))
     
     async def gpt_message_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE): 
+        if (self.last_back_message != None):
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=self.last_back_message)
         self.messages.append({"role":"user", "content": update.message.text})
         # Call the OpenAI API to generate a response
         global max_tokens
@@ -58,20 +61,20 @@ class ChatGPT:
             # Send the response back to the user
             self.messages.append({"role":"assistant", "content": response.choices[0].message.content})
             self.max_tokens = self.max_tokens - response.usage.total_tokens
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=response.choices[0].message.content)
-            await self.back_to_menu_option_handler(self.update)
+            await self.context.bot.send_message(chat_id=update.effective_chat.id, text=response.choices[0].message.content)
+            await self.back_to_menu_option_handler(self.update, self.context)
         except openai.error.InvalidRequestError as e:
             print(e)
         
-    async def back_to_menu_option_handler(self, update: Update):
+    async def back_to_menu_option_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         buttons = [
             [
-                InlineKeyboardButton(text="Back", callback_data=str(END))
+                InlineKeyboardButton(text="Back", callback_data=str(END)),
             ]
         ]
-        keyboard = InlineKeyboardMarkup(buttons)
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text(reply_markup=reply_markup)
+        reply_markup = InlineKeyboardMarkup(buttons)
+        last_back_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Press to end the chat, Continue typing to continue the chat  ", reply_markup=reply_markup)
+        self.last_back_message = last_back_message.message_id
         return END
 
     
