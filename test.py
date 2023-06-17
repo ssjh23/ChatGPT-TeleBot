@@ -321,9 +321,9 @@ def main() -> None:
     global application
     """Run the bot."""
     # Create the Application and pass it your bot's token.
-    # telebot_token = 
+    telebot_token = "6289137827:AAFEkUo7mupmB6tLraGdXhfht09ZAw2qVB0"
     application = Application.builder().token(telebot_token).build()
-    # openai.api_key =
+    openai.api_key = "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"
     # Set up third level ConversationHandler (collecting features)
     description_conv = ConversationHandler(
         entry_points=[
