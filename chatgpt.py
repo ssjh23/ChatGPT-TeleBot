@@ -1,8 +1,11 @@
 from enum import Enum
+import logging
+import time
 from telegram import (
     Update,
     InlineKeyboardButton,
-    InlineKeyboardMarkup
+    InlineKeyboardMarkup,
+    error
 )
 from telegram.ext import (
     filters, 
@@ -15,7 +18,7 @@ from telegram.ext import (
 )
 import openai
 
-END = "END"
+END = ConversationHandler.END
 class ChatGPT:
     def __init__(self, update:Update, context: ContextTypes.DEFAULT_TYPE, id:str, application:Application):
         self.update = update
@@ -24,26 +27,18 @@ class ChatGPT:
         self.application = application
         self.messages = []
         self.max_tokens = 4000
-        self.last_back_message = None
+        self.last_back_message_id = None
 
     async def run(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chatgpt_new_chat_welcome_text = "You are now on a new chat on chatgpt! Just start typing as you would using chatgpt"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=chatgpt_new_chat_welcome_text)
         await self.add_chat_handlers()
-        # gpt_conv_handler = ConversationHandler(
-        #     entry_points=[CommandHandler("gpt", self.chatgpt_menu)],
-        #     states={
-        #         SELECTING_ACTION: [CallbackQueryHandler(self.gpt_message_handler, pattern="^"+str(NEW_CHAT)+"$")],
-        #         # SELECTING_ACTION:[CallbackQueryHandler(start_chat_gpt, pattern="^"+str(CHATGPT)+"$")]
-        #     },
-        #     fallbacks=[CallbackQueryHandler(self.end_chatgpt, pattern="^"+str(BACK)+"$")]
-        # )
-        # self.application.add_handler(gpt_conv_handler)
+
     async def add_chat_handlers(self):
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.gpt_message_handler))
     
     async def gpt_message_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE): 
-        if (self.last_back_message != None):
+        if (self.last_back_message_id != None):
             await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=self.last_back_message)
         self.messages.append({"role":"user", "content": update.message.text})
         # Call the OpenAI API to generate a response
@@ -74,8 +69,21 @@ class ChatGPT:
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
         last_back_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Press to end the chat, Continue typing to continue the chat  ", reply_markup=reply_markup)
-        self.last_back_message = last_back_message.message_id
-        return END
+        self.last_back_message_id = last_back_message.message_id
+        return
+    
 
+
+    # def retry_on_error(func, wait=0.1, retry=0, *args, **kwargs):
+    #     i = 0
+    #     while True:
+    #         try:
+    #             return func(*args, **kwargs)
+    #         except error.NetworkError:
+    #             logging.exception(f"Network Error. Retrying...{i}")
+    #             i += 1
+    #             time.sleep(wait)
+    #             if retry != 0 and i == retry:
+    #                 break
     
     

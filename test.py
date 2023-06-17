@@ -217,6 +217,7 @@ async def new_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     print(context.user_data)
     ChatGPT_instance = ChatGPT(update, context, update.effective_chat.id, application)
     await ChatGPT_instance.run(update, context)
+    return SELECTING_GENDER
     # text = "Please choose, whom to add."
     # buttons = [
     #     [
@@ -320,9 +321,9 @@ def main() -> None:
     global application
     """Run the bot."""
     # Create the Application and pass it your bot's token.
-    telebot_token = "----INSERT TELEGRAM BOT TOKEN HERE"
+    telebot_token = "6289137827:AAFEkUo7mupmB6tLraGdXhfht09ZAw2qVB0"
     application = Application.builder().token(telebot_token).build()
-    openai.api_key = "----INSERT OPENAI KEY HERE----"
+    openai.api_key = "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"
     # Set up third level ConversationHandler (collecting features)
     description_conv = ConversationHandler(
         entry_points=[
