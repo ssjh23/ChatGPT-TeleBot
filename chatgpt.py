@@ -9,9 +9,7 @@ from telegram import (
 )
 from telegram.ext import (
     filters, 
-    CommandHandler,
     ConversationHandler,
-    CallbackQueryHandler,
     MessageHandler, 
     Application,
     ContextTypes
@@ -78,6 +76,8 @@ class ChatGPT:
     async def remove_chatgpt_handlers(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         for handler in self.gpt_handlers:
             self.application.remove_handler(handler=handler)
+        self.messages.clear()
+        self.gpt_handlers.clear()
         return 
 
     # def retry_on_error(func, wait=0.1, retry=0, *args, **kwargs):
