@@ -28,6 +28,7 @@ class ChatGPT:
         self.messages = []
         self.max_tokens = 4000
         self.last_back_message_id = None
+        self.gpt_handlers = []
 
     async def run(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chatgpt_new_chat_welcome_text = "You are now on a new chat on chatgpt! Just start typing as you would using chatgpt"
@@ -35,11 +36,13 @@ class ChatGPT:
         await self.add_chat_handlers()
 
     async def add_chat_handlers(self):
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.gpt_message_handler))
+        gpt_message_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, self.gpt_message_handler)
+        self.gpt_handlers.append(gpt_message_handler)
+        self.application.add_handler(gpt_message_handler)
     
     async def gpt_message_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE): 
         if (self.last_back_message_id != None):
-            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=self.last_back_message)
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=self.last_back_message_id)
         self.messages.append({"role":"user", "content": update.message.text})
         # Call the OpenAI API to generate a response
         global max_tokens
@@ -64,7 +67,7 @@ class ChatGPT:
     async def back_to_menu_option_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         buttons = [
             [
-                InlineKeyboardButton(text="Back", callback_data=str(END)),
+                InlineKeyboardButton(text="Back", callback_data="END_CHATGPT"),
             ]
         ]
         reply_markup = InlineKeyboardMarkup(buttons)
@@ -72,7 +75,10 @@ class ChatGPT:
         self.last_back_message_id = last_back_message.message_id
         return
     
-
+    async def remove_chatgpt_handlers(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        for handler in self.gpt_handlers:
+            self.application.remove_handler(handler=handler)
+        return 
 
     # def retry_on_error(func, wait=0.1, retry=0, *args, **kwargs):
     #     i = 0

@@ -60,6 +60,7 @@ SELECTING_FEATURE, TYPING = map(chr, range(6, 8))
 # Meta states
 STOPPING, TRANSCRIPTIONS = map(chr, range(8, 10))
 # Shortcut for ConversationHandler.END
+END_CHATGPT = "END_CHATGPT"
 END = ConversationHandler.END
 
 # Different constants for this example
@@ -79,6 +80,7 @@ END = ConversationHandler.END
 ) = map(chr, range(10, 22))
 
 application = None
+ChatGPT_instance:ChatGPT = None
 # Helper
 def _name_switcher(level: str) -> Tuple[str, str]:
     if level == NEW_CHAT:
@@ -210,6 +212,7 @@ async def select_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
 
 
 async def new_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    global ChatGPT_instance
     global application
     """Choose to add mother or father."""
     level = update.callback_query.data
@@ -236,7 +239,8 @@ async def new_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     # return SELECTING_GENDER
 
 
-async def end_second_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def end_chatgpt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await ChatGPT_instance.remove_chatgpt_handlers(update=update, context=context)
     """Return to top level conversation."""
     context.user_data[START_OVER] = True
     await start(update, context)
@@ -360,7 +364,7 @@ def main() -> None:
         },
         fallbacks=[
             CallbackQueryHandler(show_data, pattern="^" + str(TRANSCRIPTIONS) + "$"),
-            CallbackQueryHandler(end_second_level, pattern="^" + str(END) + "$"),
+            CallbackQueryHandler(end_chatgpt, pattern="^" + str(END_CHATGPT) + "$"),
             CommandHandler("stop", stop_nested),
         ],
         map_to_parent={
