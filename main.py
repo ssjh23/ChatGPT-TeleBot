@@ -19,6 +19,7 @@ import logging
 import os
 import openai
 from chatgpt import ChatGPT
+from imagegen import ImageGen
 from typing import Any, Dict, Tuple
 
 from telegram import __version__ as TG_VER
@@ -121,15 +122,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     return SELECTING_ACTION
 
 
-async def adding_self(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    """Add information about yourself."""
-    context.user_data[CURRENT_LEVEL] = SELF
-    text = "Okay, please tell me about yourself."
-    button = InlineKeyboardButton(text="Add info", callback_data=str(MALE))
-    keyboard = InlineKeyboardMarkup.from_button(button)
-
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
+async def new_image_gen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+    ImageGen_instance = ImageGen(update, context, update.effective_chat.id, application)
+    await ImageGen_instance.run()
 
     return DESCRIBING_SELF
 
@@ -195,7 +190,7 @@ async def select_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
             "Terminating the bot will cause the current chat to end. Type /help for more info on the bot")
     buttons = [
         [
-            InlineKeyboardButton(text="Chat", callback_data=str(NEW_CHAT)),
+            InlineKeyboardButton(text="New Chat", callback_data=str(NEW_CHAT)),
             InlineKeyboardButton(text="Chat History", callback_data=str(CHAT_HIST)),
         ],
         [
@@ -368,7 +363,7 @@ def main() -> None:
     selection_handlers = [
         chat_gpt_conv,
         CallbackQueryHandler(show_data, pattern="^" + str(TRANSCRIPTIONS) + "$"),
-        CallbackQueryHandler(adding_self, pattern="^" + str(IMAGE_GEN) + "$"),
+        CallbackQueryHandler(new_image_gen, pattern="^" + str(IMAGE_GEN) + "$"),
         CallbackQueryHandler(end, pattern="^" + str(END) + "$"),
     ]
     conv_handler = ConversationHandler(

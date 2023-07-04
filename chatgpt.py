@@ -16,7 +16,6 @@ from telegram.ext import (
 )
 import openai
 
-END = ConversationHandler.END
 class ChatGPT:
     def __init__(self, update:Update, context: ContextTypes.DEFAULT_TYPE, id:str, application:Application):
         self.update = update
