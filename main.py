@@ -126,27 +126,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     context.user_data[START_OVER] = False
     return SELECTING_ACTION
 
-
-# async def image_gen_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-#     """Selecting Image Size"""
-#     image_size_text = (
-#         "Select an image size for the generated photo"
-#     )
-#     image_size_buttons = [
-#         [        
-#             InlineKeyboardButton(text="256", callback_data=str(ImageSize.SMALL.value)),
-#             InlineKeyboardButton(text="512", callback_data=str(ImageSize.MEDIUM.value)),
-#             InlineKeyboardButton(text="1024", callback_data=str(ImageSize.LARGE.value))
-#         ],
-#         [
-#             InlineKeyboardButton(text="Back", callback_data=str(BACK_TO_START))
-#         ]
-#     ]
-#     image_size_keyboard = InlineKeyboardMarkup(image_size_buttons)
-#     await update.callback_query.answer()
-#     await update.callback_query.edit_message_text(text=image_size_text, reply_markup=image_size_keyboard)
-#     return SELECTING_LEVEL
-
 async def new_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ImageGen_instance
     ImageGen_instance = ImageGen(update, context, update.effective_chat.id, application)
@@ -226,19 +205,6 @@ async def stop_nested(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
 
     return STOPPING
 
-# # Saves the image prompt typed in by user, transits to image generation state
-# async def ask_for_image_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-#     image_prompt_text = (
-#         "Type in your prompt for the image"
-#     )
-#     context.user_data[IMAGE_SIZE] = update.callback_query.data
-#     await context.bot.send_message(chat_id=update.effective_chat.id, text=image_prompt_text)
-#     return TYPING
-
-# async def save_image_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     context.user_data[IMAGE_PROMPT] = update.message.text
-#     return await new_image(update=update, context=context)
-    
 def main() -> None:
     
     global application
@@ -271,22 +237,7 @@ def main() -> None:
             STOPPING: END,
         },
     )
-    
-    # Image Generation Conversation
-    # image_gen_conv = ConversationHandler(
-    #     entry_points=[ CallbackQueryHandler(image_gen_entry, pattern="^" + str(IMAGE_GEN) + "$")],
-    #     states= {
-    #         SELECTING_LEVEL: [
-    #             CallbackQueryHandler(ask_for_image_prompt, pattern=f"^{ImageSize.SMALL.value}$|^{ImageSize.MEDIUM.value}$|^{ImageSize.LARGE.value}$")
-    #         ],
-    #         TYPING: [
-    #             MessageHandler(filters.TEXT & ~filters.COMMAND, save_image_prompt)
-    #         ]
-    #     },
-    #     fallbacks = [
 
-    #     ]
-    # )
 
     # Main Menu Conversation handler containing nested conversations
     selection_handlers = [
