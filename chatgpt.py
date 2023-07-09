@@ -16,7 +16,6 @@ from telegram.ext import (
 )
 import openai
 
-END = ConversationHandler.END
 class ChatGPT:
     def __init__(self, update:Update, context: ContextTypes.DEFAULT_TYPE, id:str, application:Application):
         self.update = update
@@ -58,20 +57,20 @@ class ChatGPT:
             self.messages.append({"role":"assistant", "content": response.choices[0].message.content})
             self.max_tokens = self.max_tokens - response.usage.total_tokens
             await self.context.bot.send_message(chat_id=update.effective_chat.id, text=response.choices[0].message.content)
-            await self.back_to_menu_option_handler(self.update, self.context)
+            await back_to_menu_option_handler(self.update, self.context)
         except openai.error.InvalidRequestError as e:
             print(e)
         
-    async def back_to_menu_option_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        buttons = [
-            [
-                InlineKeyboardButton(text="Back", callback_data="END_CHATGPT"),
+        async def back_to_menu_option_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+            buttons = [
+                [
+                    InlineKeyboardButton(text="Back", callback_data="END_CHATGPT"),
+                ]
             ]
-        ]
-        reply_markup = InlineKeyboardMarkup(buttons)
-        last_back_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Press to end the chat, Continue typing to continue the chat  ", reply_markup=reply_markup)
-        self.last_back_message_id = last_back_message.message_id
-        return
+            reply_markup = InlineKeyboardMarkup(buttons)
+            last_back_message = await context.bot.send_message(chat_id=update.effective_chat.id, text="Press to end the chat, Continue typing to continue the chat  ", reply_markup=reply_markup)
+            self.last_back_message_id = last_back_message.message_id
+            return
     
     async def remove_chatgpt_handlers(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         for handler in self.gpt_handlers:
