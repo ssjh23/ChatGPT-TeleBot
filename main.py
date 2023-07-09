@@ -62,7 +62,11 @@ SELECTING_FEATURE, TYPING = map(chr, range(6, 8))
 # Meta states
 STOPPING, BACK_TO_START = map(chr, range(8, 10))
 # Shortcut for ConversationHandler.END
+NEW_IMAGE = "NEW_IMAGE"
 END_CHATGPT = "END_CHATGPT"
+IMAGE_SIZE = "IMAGE_SIZE"
+IMAGE_PROMPT = "IMAGE_PROMPT"
+IMAGE_GEN = "IMAGE_GEN"
 END = ConversationHandler.END
 
 class ImageSize(Enum):
@@ -121,29 +125,29 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     return SELECTING_ACTION
 
 
-async def new_image_gen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    # ImageGen_instance = ImageGen(update, context, update.effective_chat.id, application)
-    # await ImageGen_instance.run()
-    """Selecting Image Size"""
-    image_size_text = (
-        "Select an image size for the generated photo"
-    )
+# async def image_gen_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+#     """Selecting Image Size"""
+#     image_size_text = (
+#         "Select an image size for the generated photo"
+#     )
+#     image_size_buttons = [
+#         [        
+#             InlineKeyboardButton(text="256", callback_data=str(ImageSize.SMALL.value)),
+#             InlineKeyboardButton(text="512", callback_data=str(ImageSize.MEDIUM.value)),
+#             InlineKeyboardButton(text="1024", callback_data=str(ImageSize.LARGE.value))
+#         ],
+#         [
+#             InlineKeyboardButton(text="Back", callback_data=str(BACK_TO_START))
+#         ]
+#     ]
+#     image_size_keyboard = InlineKeyboardMarkup(image_size_buttons)
+#     await update.callback_query.answer()
+#     await update.callback_query.edit_message_text(text=image_size_text, reply_markup=image_size_keyboard)
+#     return SELECTING_LEVEL
 
-    image_size_buttons = [
-        [        
-            InlineKeyboardButton(text="256", callback_data=str(ImageSize.SMALL)),
-            InlineKeyboardButton(text="512", callback_data=str(ImageSize.MEDIUM)),
-            InlineKeyboardButton(text="1024", callback_data=str(ImageSize.LARGE))
-        ],
-        [
-            InlineKeyboardButton(text="Back", callback_data=str(SELECTING_ACTION))
-        ]
-    ]
-    image_size_keyboard = InlineKeyboardMarkup(image_size_buttons)
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text(text=image_size_text, reply_markup=image_size_keyboard)
-    return DESCRIBING_SELF
-
+async def new_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    ImageGen_instance = ImageGen(update, context, update.effective_chat.id, application)
+    await ImageGen_instance.run()
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """End Conversation by command."""
@@ -163,7 +167,7 @@ async def end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 
 # Second level conversation callbacks
-async def select_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+async def chat_gpt_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     """Choose to add a parent or a child."""
     text = ("You can choose to start a new chat or view your chat history. " 
             "Terminating the bot will cause the current chat to end. Type /help for more info on the bot")
@@ -211,7 +215,19 @@ async def stop_nested(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
 
     return STOPPING
 
+# # Saves the image prompt typed in by user, transits to image generation state
+# async def ask_for_image_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
+#     image_prompt_text = (
+#         "Type in your prompt for the image"
+#     )
+#     context.user_data[IMAGE_SIZE] = update.callback_query.data
+#     await context.bot.send_message(chat_id=update.effective_chat.id, text=image_prompt_text)
+#     return TYPING
 
+# async def save_image_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     context.user_data[IMAGE_PROMPT] = update.message.text
+#     return await new_image(update=update, context=context)
+    
 def main() -> None:
     
     global application
@@ -222,9 +238,10 @@ def main() -> None:
     logger.info('%s',telebot_token)
     application = Application.builder().token(telebot_token).build()
     openai.api_key=test_token
-    # Set up second level ConversationHandler (adding a person)
+
+    # ChatGPT Conversation
     chat_gpt_conv = ConversationHandler(
-        entry_points=[ CallbackQueryHandler(select_level, pattern="^" + str(CHAT_GPT) + "$") ],
+        entry_points=[ CallbackQueryHandler(chat_gpt_entry, pattern="^" + str(CHAT_GPT) + "$") ],
         states={
             SELECTING_LEVEL: [
                 CallbackQueryHandler(new_chat, pattern=f"^{NEW_CHAT}$")
@@ -243,20 +260,29 @@ def main() -> None:
             STOPPING: END,
         },
     )
-
+    
+    # Image Generation Conversation
     # image_gen_conv = ConversationHandler(
-    #     entry_points=[ CallbackQueryHandler(new_image_gen, pattern="^" + str(IMAGE_GEN) + "$")],
-    #     states=
+    #     entry_points=[ CallbackQueryHandler(image_gen_entry, pattern="^" + str(IMAGE_GEN) + "$")],
+    #     states= {
+    #         SELECTING_LEVEL: [
+    #             CallbackQueryHandler(ask_for_image_prompt, pattern=f"^{ImageSize.SMALL.value}$|^{ImageSize.MEDIUM.value}$|^{ImageSize.LARGE.value}$")
+    #         ],
+    #         TYPING: [
+    #             MessageHandler(filters.TEXT & ~filters.COMMAND, save_image_prompt)
+    #         ]
+    #     },
+    #     fallbacks = [
+
+    #     ]
     # )
 
-    # Set up top level ConversationHandler (selecting action)
-    # Because the states of the third level conversation map to the ones of the second level
-    # conversation, we need to make sure the top level conversation can also handle them
+    # Main Menu Conversation handler containing nested conversations
     selection_handlers = [
-    chat_gpt_conv,
-        CallbackQueryHandler(new_image_gen, pattern="^" + str(IMAGE_GEN) + "$"),
-        CallbackQueryHandler(end, pattern="^" + str(END) + "$"),
-        CallbackQueryHandler(reset_convo, pattern="^" + str(BACK_TO_START) + "$")
+        chat_gpt_conv,
+        # image_gen_conv,
+        CallbackQueryHandler(reset_convo, pattern="^" + str(BACK_TO_START) + "$"),
+        CallbackQueryHandler(new_image, pattern="^" + str(IMAGE_GEN) + "$")
     ]
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
