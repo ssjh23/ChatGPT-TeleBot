@@ -64,6 +64,7 @@ STOPPING, BACK_TO_START = map(chr, range(8, 10))
 # Shortcut for ConversationHandler.END
 NEW_IMAGE = "NEW_IMAGE"
 END_CHATGPT = "END_CHATGPT"
+END_IMAGEGEN = "END_IMAGEGEN"
 IMAGE_SIZE = "IMAGE_SIZE"
 IMAGE_PROMPT = "IMAGE_PROMPT"
 IMAGE_GEN = "IMAGE_GEN"
@@ -92,6 +93,7 @@ class ImageSize(Enum):
 
 application = None
 ChatGPT_instance:ChatGPT = None
+ImageGen_instance:ImageGen = None
 
 # Top level conversation callbacks
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -146,13 +148,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 #     return SELECTING_LEVEL
 
 async def new_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global ImageGen_instance
     ImageGen_instance = ImageGen(update, context, update.effective_chat.id, application)
     await ImageGen_instance.run()
+    print("Back Here")
+
+async def end_imagegen(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("Here")
+    await ImageGen_instance.remove_imagegen_handlers()
+    """Return to top level conversation."""
+    context.user_data[START_OVER] = True
+    await start(update, context)
+    return END
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """End Conversation by command."""
     await update.message.reply_text("Okay, bye.")
-
     return END
 
 
@@ -291,7 +302,10 @@ def main() -> None:
             SELECTING_LEVEL: selection_handlers,
             STOPPING: [CommandHandler("start", start)],
         },
-        fallbacks=[CommandHandler("stop", stop)],
+        fallbacks=[
+            CommandHandler("stop", stop),
+            CallbackQueryHandler(end_imagegen, pattern="^" + str(END_IMAGEGEN) + "$"),
+        ],
     )
 
     application.add_handler(conv_handler)

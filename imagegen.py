@@ -4,8 +4,7 @@ import time
 from telegram import (
     Update,
     InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    error
+    InlineKeyboardMarkup
 )
 from telegram.ext import (
     filters, 
@@ -30,6 +29,7 @@ ASK_FOR_N = "ASK_FOR_N"
 SELECTING_SIZE = "SELECTING_SIZE"
 ASK_FOR_PROMPT = "ASK_FOR_PROMPT"
 BACK_TO_START = "BACK_TO_START"
+END_IMAGEGEN = "END_IMAGEGEN"
 
 class ImageSize(Enum):
     SMALL = 256
@@ -44,6 +44,7 @@ class ImageGen:
         self.application = application
         self.imagegen_handlers = []
         self.welcome = False
+        self.last_back_message_id = None
     
     async def run(self):
         image_gen_welcome_text = "You are now using the Image Generation tool! Type /imagegen to get started."
@@ -103,9 +104,6 @@ class ImageGen:
                 InlineKeyboardButton(text="512", callback_data=str(ImageSize.MEDIUM.value)),
                 InlineKeyboardButton(text="1024", callback_data=str(ImageSize.LARGE.value))
             ],
-            [
-                InlineKeyboardButton(text="Back", callback_data=str(BACK_TO_START))
-            ]
         ]
         image_size_keyboard = InlineKeyboardMarkup(image_size_buttons)
         await context.bot.send_message(chat_id=self.id, text=image_size_text, reply_markup=image_size_keyboard)
@@ -113,7 +111,7 @@ class ImageGen:
 
     async def restart(self, update:Update, context: ContextTypes.DEFAULT_TYPE):
         return await self.image_gen_entry(update=self.update, context=self.context)
-
+    
     async def add_image_handlers(self):
         restart = CommandHandler("restart", self.restart)
         image_gen_entry_handler = CommandHandler("imagegen", self.image_gen_entry)
@@ -141,6 +139,11 @@ class ImageGen:
         self.imagegen_handlers.append(image_gen_conv)
         self.application.add_handler(image_gen_conv)
 
+    async def remove_imagegen_handlers(self):
+        for handler in self.imagegen_handlers:
+            self.application.remove_handler(handler=handler)
+        return 
+    
     def get_image_size(self):
         image_size_string = self.context.user_data[IMAGE_SIZE]
         image_size_param = f"{image_size_string}x{image_size_string}"
@@ -155,7 +158,24 @@ class ImageGen:
         return int(image_n)
 
     async def gen_image(self):
+        async def back_to_menu_option_handler():
+            back_button_text = (
+                "If you want to generate more images with a different prompt using the same image size and number"
+                "just type the prompt below. Type /restart to redo the whole settings selection. Click Back to return to the main menu"
+            )
+            buttons = [
+                [
+                    InlineKeyboardButton(text="Back", callback_data=END_IMAGEGEN),
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(buttons)
+            last_back_message = await self.context.bot.send_message(chat_id=self.id, text=back_button_text, reply_markup=reply_markup)
+            self.last_back_message_id = last_back_message.message_id
+            return
+
         try:
+            if (self.last_back_message_id != None):
+                await self.context.bot.delete_message(chat_id=self.update.effective_chat.id, message_id=self.last_back_message_id)
             result = openai.Image.create(
                 prompt=self.get_image_prompt(),
                 n=self.get_n(),
@@ -163,9 +183,10 @@ class ImageGen:
                 )
             for photo in result.data:
                 await self.context.bot.send_photo(chat_id=self.id, photo=photo.url)
-                
-        except error as e:
+            await back_to_menu_option_handler()
+        except openai.InvalidRequestError as e:
             print(e)
+            
     
 
     
