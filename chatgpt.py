@@ -32,8 +32,8 @@ class ChatGPT:
         self.gpt_handlers = []
 
     async def run(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        chatgpt_new_chat_welcome_text = "You are now on a new chat on chatgpt! Just start typing /chatgpt to start"
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=chatgpt_new_chat_welcome_text)
+        chatgpt_new_chat_welcome_text = "You are now on a new chat on chatgpt! Just start typing /chatgpt to start. /back_to_menu to return to the main menu"
+        await update.callback_query.edit_message_text(text=chatgpt_new_chat_welcome_text)
         await self.add_chat_handlers()
 
     async def add_chat_handlers(self):
@@ -67,16 +67,17 @@ class ChatGPT:
 
     async def ask_for_initial_prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_gpt_text = (
-            "Type your initial prompt just like you would in chatgpt! To return to this menu, type /restart_chatgpt at any point. To return to the main menu, type /back_to_main"
+            "Type your initial prompt just like you would in chatgpt! To create a new chat, type /restart_chatgpt at any point. To return to the main menu, type /back_to_main"
         )
-        await context.bot.send_message(chat_id=self.id, text=chat_gpt_text)
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text(text=chat_gpt_text)
         return TYPING_PROMPT
 
     async def chat_gpt_entry(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         """Choose to add a parent or a child."""
         chatgpt_menu_text = (
-            "Start a new chat by clicking on the button below" 
-            "Terminating the bot will cause the current chat to end. Type /help for more info on the bot"
+            "Start a new chat by clicking on the button below. Type /back_to_main to return to the main menu" 
+            "Type /help for more info on the bot"
         )
         buttons = [
             [

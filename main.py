@@ -62,7 +62,6 @@ STOPPING, BACK_TO_START = map(chr, range(8, 10))
 # Shortcut for ConversationHandler.END
 NEW_IMAGE = "NEW_IMAGE"
 END_CHATGPT = "END_CHATGPT"
-END_IMAGEGEN = "END_IMAGEGEN"
 IMAGE_SIZE = "IMAGE_SIZE"
 IMAGE_PROMPT = "IMAGE_PROMPT"
 IMAGE_GEN = "IMAGE_GEN"
@@ -122,7 +121,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
             "Welcome to your personal OpenAI bot, " + update.effective_user.name
         )
         await update.message.reply_text(text=text, reply_markup=keyboard)
-    print("Selecting Action")
     context.user_data[START_OVER] = False
     return SELECTING_ACTION
 
@@ -216,7 +214,6 @@ def main() -> None:
         },
         fallbacks=[
             CommandHandler("stop", stop),
-            CallbackQueryHandler(end_imagegen, pattern="^" + str(END_IMAGEGEN) + "$"),
         ],
     )
     application.add_handler(conv_handler)

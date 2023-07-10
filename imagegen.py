@@ -113,7 +113,7 @@ class ImageGen:
         return await self.image_gen_entry(update=self.update, context=self.context)
     
     async def add_image_handlers(self):
-        restart = CommandHandler("restart", self.restart)
+        restart = CommandHandler("restart_imagegen", self.restart)
         image_gen_entry_handler = CommandHandler("imagegen", self.image_gen_entry)
         ask_for_n_handler = CallbackQueryHandler(self.ask_for_n, pattern=f"^{ImageSize.SMALL.value}$|^{ImageSize.MEDIUM.value}$|^{ImageSize.LARGE.value}$")
         save_n_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, self.save_n)
@@ -158,22 +158,11 @@ class ImageGen:
         return int(image_n)
 
     async def gen_image(self):
-        async def back_to_menu_option_handler():
-            back_button_text = (
-                "If you want to generate more images with a different prompt using the same image size and number"
-                "just type the prompt below. Type /restart to redo the whole settings selection. Click Back to return to the main menu"
-            )
-            buttons = [
-                [
-                    InlineKeyboardButton(text="Back", callback_data=END_IMAGEGEN),
-                ]
-            ]
-            reply_markup = InlineKeyboardMarkup(buttons)
-            last_back_message = await self.context.bot.send_message(chat_id=self.id, text=back_button_text, reply_markup=reply_markup)
-            self.last_back_message_id = last_back_message.message_id
-            return
-
         try:
+            image_finish_text = (
+                "If you want to generate more images with a different prompt using the same image size and number"
+                "just type the prompt below. Type /restart_imagegen to redo the whole settings selection. Tyoe /back_to_menu to return to the main menu"
+            )
             if (self.last_back_message_id != None):
                 await self.context.bot.delete_message(chat_id=self.update.effective_chat.id, message_id=self.last_back_message_id)
             result = openai.Image.create(
@@ -183,7 +172,7 @@ class ImageGen:
                 )
             for photo in result.data:
                 await self.context.bot.send_photo(chat_id=self.id, photo=photo.url)
-            await back_to_menu_option_handler()
+            self.context.bot.send_message(chat_id=self.id, text=image_finish_text)
         except openai.InvalidRequestError as e:
             print(e)
             
