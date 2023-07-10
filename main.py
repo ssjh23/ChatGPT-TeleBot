@@ -43,8 +43,6 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     ConversationHandler,
-    MessageHandler,
-    filters,
 )
 
 # Enable logging
@@ -69,7 +67,6 @@ IMAGE_SIZE = "IMAGE_SIZE"
 IMAGE_PROMPT = "IMAGE_PROMPT"
 IMAGE_GEN = "IMAGE_GEN"
 END = ConversationHandler.END
-
 class ImageSize(Enum):
     SMALL = 256
     MEDIUM = 512
@@ -97,7 +94,7 @@ ImageGen_instance:ImageGen = None
 
 # Top level conversation callbacks
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    """Select an action: Adding parent/child or show data."""
+    """Select an action: ChatGPT or Image Generation"""
     text = (
        "Select an option to get started. /stop to stop the bot at anytime"
     )
@@ -115,14 +112,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
 
     # If we're starting over we don't need to send a new message
     if context.user_data.get(START_OVER):
-        await update.callback_query.answer()
-        await update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
+        if update.callback_query != None:
+            await update.callback_query.answer()
+            await update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=keyboard)
     else:
         await update.message.reply_text(
             "Welcome to your personal OpenAI bot, " + update.effective_user.name
         )
         await update.message.reply_text(text=text, reply_markup=keyboard)
-
+    print("Selecting Action")
     context.user_data[START_OVER] = False
     return SELECTING_ACTION
 
@@ -130,10 +130,8 @@ async def new_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ImageGen_instance
     ImageGen_instance = ImageGen(update, context, update.effective_chat.id, application)
     await ImageGen_instance.run()
-    print("Back Here")
 
 async def end_imagegen(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("Here")
     await ImageGen_instance.remove_imagegen_handlers()
     """Return to top level conversation."""
     context.user_data[START_OVER] = True
@@ -155,32 +153,10 @@ async def end(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     return END
 
-
-# Second level conversation callbacks
-async def chat_gpt_entry(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    """Choose to add a parent or a child."""
-    text = ("You can choose to start a new chat or view your chat history. " 
-            "Terminating the bot will cause the current chat to end. Type /help for more info on the bot")
-    buttons = [
-        [
-            InlineKeyboardButton(text="New Chat", callback_data=str(NEW_CHAT)),
-            InlineKeyboardButton(text="Chat History", callback_data=str(CHAT_HIST)),
-        ],
-        [
-            InlineKeyboardButton(text="Back", callback_data=str(BACK_TO_START)),
-        ],
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-
-    await update.callback_query.answer()
-    await update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
-    return SELECTING_LEVEL
-
-
 async def new_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     global ChatGPT_instance
     global application
-    """Choose to add mother or father."""
+    """Start a new chat."""
     level = update.callback_query.data
     context.user_data[CURRENT_LEVEL] = level
     ChatGPT_instance = ChatGPT(update, context, update.effective_chat.id, application)
@@ -205,6 +181,12 @@ async def stop_nested(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str
 
     return STOPPING
 
+async def back(update :Update, context: ContextTypes.DEFAULT_TYPE):
+    if ChatGPT_instance != None:
+        await end_chatgpt(update=update, context=context)
+    elif ImageGen_instance != None:
+        await end_imagegen(update=update, context=context)
+    
 def main() -> None:
     
     global application
@@ -216,38 +198,17 @@ def main() -> None:
     application = Application.builder().token(telebot_token).build()
     openai.api_key=test_token
 
-    # ChatGPT Conversation
-    chat_gpt_conv = ConversationHandler(
-        entry_points=[ CallbackQueryHandler(chat_gpt_entry, pattern="^" + str(CHAT_GPT) + "$") ],
-        states={
-            SELECTING_LEVEL: [
-                CallbackQueryHandler(new_chat, pattern=f"^{NEW_CHAT}$")
-            ],
-        },
-        fallbacks=[
-            CallbackQueryHandler(end_chatgpt, pattern="^" + str(END_CHATGPT) + "$"),
-            CommandHandler("stop", stop_nested),
-        ],
-        map_to_parent={
-            # After showing data return to top level menu
-            BACK_TO_START: BACK_TO_START,
-            # Return to top level menu
-            END: SELECTING_ACTION,
-            # End conversation altogether
-            STOPPING: END,
-        },
-    )
-
-
     # Main Menu Conversation handler containing nested conversations
     selection_handlers = [
-        chat_gpt_conv,
-        # image_gen_conv,
+        CallbackQueryHandler(new_chat, pattern="^" + str(CHAT_GPT) + "$"),
         CallbackQueryHandler(reset_convo, pattern="^" + str(BACK_TO_START) + "$"),
-        CallbackQueryHandler(new_image, pattern="^" + str(IMAGE_GEN) + "$")
+        CallbackQueryHandler(new_image, pattern="^" + str(IMAGE_GEN) + "$"),
+        CommandHandler("back_to_main", back)
     ]
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", start),
+        ],
         states={
             SELECTING_ACTION: selection_handlers,
             SELECTING_LEVEL: selection_handlers,
@@ -258,7 +219,6 @@ def main() -> None:
             CallbackQueryHandler(end_imagegen, pattern="^" + str(END_IMAGEGEN) + "$"),
         ],
     )
-
     application.add_handler(conv_handler)
 
     # Run the bot until the user presses Ctrl-C

@@ -139,7 +139,7 @@ class ImageGen:
         self.imagegen_handlers.append(image_gen_conv)
         self.application.add_handler(image_gen_conv)
 
-    async def remove_imagegen_handlers(self):
+    async def remove_image_handlers(self):
         for handler in self.imagegen_handlers:
             self.application.remove_handler(handler=handler)
         return 
