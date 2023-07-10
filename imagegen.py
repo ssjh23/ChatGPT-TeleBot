@@ -31,6 +31,10 @@ ASK_FOR_PROMPT = "ASK_FOR_PROMPT"
 BACK_TO_START = "BACK_TO_START"
 END_IMAGEGEN = "END_IMAGEGEN"
 
+BACK_TO_MENU_COMMAND = "back_to_main"
+IMAGE_GEN_START_COMMAND = "imagegen"
+RESTART_IMAGE_GEN_COMMAND = "restart_imagegen"
+
 class ImageSize(Enum):
     SMALL = 256
     MEDIUM = 512
@@ -47,26 +51,29 @@ class ImageGen:
         self.last_back_message_id = None
     
     async def run(self):
-        image_gen_welcome_text = "You are now using the Image Generation tool! Type /imagegen to get started."
+        image_gen_welcome_text = f"You are now using the Image Generation tool! Type /{IMAGE_GEN_START_COMMAND} to get started."
         if (self.welcome == False):
-            await self.context.bot.send_message(chat_id=self.update.effective_chat.id, text=image_gen_welcome_text)
+            await self.update.callback_query.edit_message_text(text=image_gen_welcome_text)
             self.welcome = True
         await self.add_image_handlers()
 
     # Saves the image prompt typed in by user, transits to image generation state
     async def ask_for_image_prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         image_prompt_text = (
-            "Type in your prompt for the image"
+            f"Size of image: {self.get_image_size()}\n"
+            f"Number of images to generate: {self.get_n()}\n" 
+            f"Type in your prompt for the image \n"
         )
         await context.bot.send_message(chat_id=self.id, text=image_prompt_text)
         return TYPING_PROMPT
 
     # Saves the image prompt typed in by user, transits to image generation state
     async def ask_for_n(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-        image_prompt_text = (
-            "Type in the number (1-10) of images to generate. "
-        )
         context.user_data[IMAGE_SIZE] = update.callback_query.data
+        image_prompt_text = (
+            f"Size of image: {self.get_image_size()}\n"
+            f"Type in the number (1-10) of images to generate.\n"
+        )
         await update.callback_query.edit_message_text(text=image_prompt_text)
         return TYPING_N
     
@@ -113,8 +120,8 @@ class ImageGen:
         return await self.image_gen_entry(update=self.update, context=self.context)
     
     async def add_image_handlers(self):
-        restart = CommandHandler("restart_imagegen", self.restart)
-        image_gen_entry_handler = CommandHandler("imagegen", self.image_gen_entry)
+        restart = CommandHandler(f"{RESTART_IMAGE_GEN_COMMAND}", self.restart)
+        image_gen_entry_handler = CommandHandler(f"{IMAGE_GEN_START_COMMAND}", self.image_gen_entry)
         ask_for_n_handler = CallbackQueryHandler(self.ask_for_n, pattern=f"^{ImageSize.SMALL.value}$|^{ImageSize.MEDIUM.value}$|^{ImageSize.LARGE.value}$")
         save_n_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, self.save_n)
         save_image_prompt_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, self.save_image_prompt)
@@ -161,10 +168,17 @@ class ImageGen:
         try:
             image_finish_text = (
                 "If you want to generate more images with a different prompt using the same image size and number"
-                "just type the prompt below. Type /restart_imagegen to redo the whole settings selection. Tyoe /back_to_menu to return to the main menu"
+                f"just type the prompt below. Type /{RESTART_IMAGE_GEN_COMMAND} to redo the whole settings selection. Type /{BACK_TO_MENU_COMMAND} to return to the main menu"
+            )
+            chosen_image_settings_text = (
+                "Generating photos with the following settings \n"
+                f"Size of image: {self.get_image_size()}\n"
+                f"Number of images: {self.get_n()}\n" 
+                f"Prompt: {self.get_image_prompt()}"            
             )
             if (self.last_back_message_id != None):
                 await self.context.bot.delete_message(chat_id=self.update.effective_chat.id, message_id=self.last_back_message_id)
+            await self.context.bot.send_message(chat_id=self.id, text=chosen_image_settings_text)
             result = openai.Image.create(
                 prompt=self.get_image_prompt(),
                 n=self.get_n(),
@@ -172,7 +186,7 @@ class ImageGen:
                 )
             for photo in result.data:
                 await self.context.bot.send_photo(chat_id=self.id, photo=photo.url)
-            self.context.bot.send_message(chat_id=self.id, text=image_finish_text)
+            await self.context.bot.send_message(chat_id=self.id, text=image_finish_text)
         except openai.InvalidRequestError as e:
             print(e)
             

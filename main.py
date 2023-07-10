@@ -130,7 +130,7 @@ async def new_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await ImageGen_instance.run()
 
 async def end_imagegen(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await ImageGen_instance.remove_imagegen_handlers()
+    await ImageGen_instance.remove_image_handlers()
     """Return to top level conversation."""
     context.user_data[START_OVER] = True
     await start(update, context)
