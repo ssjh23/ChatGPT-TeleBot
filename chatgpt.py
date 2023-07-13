@@ -20,6 +20,11 @@ NEW_CHAT = "NEW_CHAT"
 END_CHATGPT = "END_CHATGPT"
 SELECTING_ACTION = "SELECTING_ACTION"
 TYPING_PROMPT = "TYPING_PROMPT"
+
+START_CHATGPT_COMMAND = "chatgpt"
+BACK_TO_MAIN_COMMAND = "back_to_main"
+RESTART_CHATGPT_COMMAND = "restart_chatgpt"
+
 class ChatGPT:
     def __init__(self, update:Update, context: ContextTypes.DEFAULT_TYPE, id:str, application:Application):
         self.update = update
@@ -32,7 +37,7 @@ class ChatGPT:
         self.gpt_handlers = []
 
     async def run(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        chatgpt_new_chat_welcome_text = "You are now on a new chat on chatgpt! Just start typing /chatgpt to start. /back_to_menu to return to the main menu"
+        chatgpt_new_chat_welcome_text = f"You are now on a new chat on chatgpt! Just start typing /{START_CHATGPT_COMMAND} to start. /{BACK_TO_MAIN_COMMAND} to return to the main menu"
         await update.callback_query.edit_message_text(text=chatgpt_new_chat_welcome_text)
         await self.add_chat_handlers()
 
@@ -67,7 +72,7 @@ class ChatGPT:
 
     async def ask_for_initial_prompt(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_gpt_text = (
-            "Type your initial prompt just like you would in chatgpt! To create a new chat, type /restart_chatgpt at any point. To return to the main menu, type /back_to_main"
+            f"Type your initial prompt just like you would in chatgpt! To create a new chat, type /{RESTART_CHATGPT_COMMAND} at any point. To return to the main menu, type /{BACK_TO_MAIN_COMMAND}"
         )
         await update.callback_query.answer()
         await update.callback_query.edit_message_text(text=chat_gpt_text)
@@ -76,7 +81,7 @@ class ChatGPT:
     async def chat_gpt_entry(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
         """Choose to add a parent or a child."""
         chatgpt_menu_text = (
-            "Start a new chat by clicking on the button below. Type /back_to_main to return to the main menu" 
+            f"Start a new chat by clicking on the button below. Type /{BACK_TO_MAIN_COMMAND} to return to the main menu" 
             "Type /help for more info on the bot"
         )
         buttons = [
@@ -90,7 +95,7 @@ class ChatGPT:
     
     async def gpt_message_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE): 
         helper_text = (
-            "Type /back_to_main or /restart_chatgpt to end this chat and go to the respective menus. Continue typing to continue the chat"
+            f"Type /{BACK_TO_MAIN_COMMAND} or /{RESTART_CHATGPT_COMMAND} to end this chat and go to the respective menus. Continue typing to continue the chat"
         )
             
         if (self.last_back_message_id != None):

@@ -65,6 +65,7 @@ END_CHATGPT = "END_CHATGPT"
 IMAGE_SIZE = "IMAGE_SIZE"
 IMAGE_PROMPT = "IMAGE_PROMPT"
 IMAGE_GEN = "IMAGE_GEN"
+FAILED_ACCESS = "FAILED_ACCESS"
 END = ConversationHandler.END
 class ImageSize(Enum):
     SMALL = 256
@@ -90,6 +91,7 @@ class ImageSize(Enum):
 application = None
 ChatGPT_instance:ChatGPT = None
 ImageGen_instance:ImageGen = None
+has_access = False
 
 # Top level conversation callbacks
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -109,6 +111,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     ]
     keyboard = InlineKeyboardMarkup(buttons)
 
+    # Login
+    if not has_access:
+        login_text = (
+            "Please key in the appropriate PIN to access the bot"
+        )
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=login_text)
+        entered_pin = update.message.text
+        access_pin = os.getenv("ACCESS_PIN")
+        if entered_pin != access_pin:
+            failed_login_text = (
+                "The entered PIN is incorrect. Type /start to try again"
+            )
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=failed_login_text)
+            return FAILED_ACCESS
     # If we're starting over we don't need to send a new message
     if context.user_data.get(START_OVER):
         if update.callback_query != None:
@@ -190,11 +206,11 @@ def main() -> None:
     global application
     """Run the bot."""
     # Create the Application and pass it your bot's token.
-    test_token = os.getenv("OPENAI_API_KEY")
+    api_token = os.getenv("OPENAI_API_KEY")
     telebot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     logger.info('%s',telebot_token)
     application = Application.builder().token(telebot_token).build()
-    openai.api_key=test_token
+    openai.api_key=api_token
 
     # Main Menu Conversation handler containing nested conversations
     selection_handlers = [
@@ -211,6 +227,7 @@ def main() -> None:
             SELECTING_ACTION: selection_handlers,
             SELECTING_LEVEL: selection_handlers,
             STOPPING: [CommandHandler("start", start)],
+            FAILED_ACCESS: [CommandHandler("start", start)]
         },
         fallbacks=[
             CommandHandler("stop", stop),
