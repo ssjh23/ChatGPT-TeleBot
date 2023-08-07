@@ -43,6 +43,8 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     ConversationHandler,
+    MessageHandler,
+    filters
 )
 
 # Enable logging
@@ -66,6 +68,7 @@ IMAGE_SIZE = "IMAGE_SIZE"
 IMAGE_PROMPT = "IMAGE_PROMPT"
 IMAGE_GEN = "IMAGE_GEN"
 FAILED_ACCESS = "FAILED_ACCESS"
+WAITING_FOR_PIN = "WAITING_FOR_PIN"
 END = ConversationHandler.END
 class ImageSize(Enum):
     SMALL = 256
@@ -95,50 +98,55 @@ has_access = False
 
 # Top level conversation callbacks
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
-    """Select an action: ChatGPT or Image Generation"""
-    text = (
-       "Select an option to get started. /stop to stop the bot at anytime"
-    )
-
-    buttons = [
-        [
-            InlineKeyboardButton(text="ChatGPT", callback_data=str(CHAT_GPT)),
-            InlineKeyboardButton(text="Image Generation", callback_data=str(IMAGE_GEN)),
-        ],
-        [
-            InlineKeyboardButton(text="Done", callback_data=str(END)),
-        ],
-    ]
-    keyboard = InlineKeyboardMarkup(buttons)
-
     # Login
-    if not has_access:
-        login_text = (
-            "Please key in the appropriate PIN to access the bot"
+    login_text = (
+        "Please key in the appropriate PIN to access the bot"
+    )
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=login_text)
+    return WAITING_FOR_PIN
+
+async def getting_pin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        global has_access
+        """Select an action: ChatGPT or Image Generation"""
+        text = (
+        "Select an option to get started. /stop to stop the bot at anytime"
         )
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=login_text)
+
+        buttons = [
+            [
+                InlineKeyboardButton(text="ChatGPT", callback_data=str(CHAT_GPT)),
+                InlineKeyboardButton(text="Image Generation", callback_data=str(IMAGE_GEN)),
+            ],
+            [
+                InlineKeyboardButton(text="Done", callback_data=str(END)),
+            ],
+        ]
+        keyboard = InlineKeyboardMarkup(buttons)
         entered_pin = update.message.text
         access_pin = os.getenv("ACCESS_PIN")
-        if entered_pin != access_pin:
-            failed_login_text = (
-                "The entered PIN is incorrect. Type /start to try again"
-            )
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=failed_login_text)
-            return FAILED_ACCESS
-    # If we're starting over we don't need to send a new message
-    if context.user_data.get(START_OVER):
-        if update.callback_query != None:
-            await update.callback_query.answer()
-            await update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
+        if not has_access:
+            if entered_pin != access_pin:
+                failed_login_text = (
+                    "The entered PIN is incorrect. Type /start to try again"
+                )
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=failed_login_text)
+                return FAILED_ACCESS
+                # If we're starting over we don't need to send a new message
+        has_access = True
+        if context.user_data.get(START_OVER):
+            if update.callback_query != None:
+                await update.callback_query.answer()
+                await update.callback_query.edit_message_text(text=text, reply_markup=keyboard)
+            else:
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=keyboard)
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, reply_markup=keyboard)
-    else:
-        await update.message.reply_text(
-            "Welcome to your personal OpenAI bot, " + update.effective_user.name
-        )
-        await update.message.reply_text(text=text, reply_markup=keyboard)
-    context.user_data[START_OVER] = False
-    return SELECTING_ACTION
+            await update.message.reply_text(
+                "Welcome to your personal OpenAI bot, " + update.effective_user.name
+            )
+            await update.message.reply_text(text=text, reply_markup=keyboard)
+        context.user_data[START_OVER] = False
+        return SELECTING_ACTION
+
 
 async def new_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ImageGen_instance
@@ -149,8 +157,8 @@ async def end_imagegen(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await ImageGen_instance.remove_image_handlers()
     """Return to top level conversation."""
     context.user_data[START_OVER] = True
-    await start(update, context)
-    return END
+    await getting_pin(update=update, context=context)
+    return SELECTING_ACTION
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """End Conversation by command."""
@@ -181,8 +189,8 @@ async def end_chatgpt(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     await ChatGPT_instance.remove_chatgpt_handlers(update=update, context=context)
     """Return to top level conversation."""
     context.user_data[START_OVER] = True
-    await start(update, context)
-    return END
+    await getting_pin(update=update, context=context)
+    return SELECTING_ACTION
 
 async def reset_convo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data[START_OVER] = True
@@ -224,6 +232,7 @@ def main() -> None:
             CommandHandler("start", start),
         ],
         states={
+            WAITING_FOR_PIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, getting_pin)],
             SELECTING_ACTION: selection_handlers,
             SELECTING_LEVEL: selection_handlers,
             STOPPING: [CommandHandler("start", start)],
