@@ -69,27 +69,12 @@ IMAGE_PROMPT = "IMAGE_PROMPT"
 IMAGE_GEN = "IMAGE_GEN"
 FAILED_ACCESS = "FAILED_ACCESS"
 WAITING_FOR_PIN = "WAITING_FOR_PIN"
+START_OVER = "START_OVER"
 END = ConversationHandler.END
 class ImageSize(Enum):
     SMALL = 256
     MEDIUM = 512
     LARGE = 1024
-
-# Different constants for this example
-(
-    NEW_CHAT,
-    CHAT_HIST,
-    SELF,
-    GENDER,
-    MALE,
-    FEMALE,
-    AGE,
-    NAME,
-    START_OVER,
-    FEATURES,
-    CURRENT_FEATURE,
-    CURRENT_LEVEL,
-) = map(chr, range(10, 22))
 
 application = None
 ChatGPT_instance:ChatGPT = None
@@ -101,27 +86,13 @@ logger = UserActionLogger
 # Error handler
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Log the error first
-    logger.error('%s', "Exception while handling an update:", exc_info=context.error)
+    logger.error('%s', "Exception while handling an update", exc_info=context.error)
 
-    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
-    tb_string = "".join(tb_list)
-
-    # Build the message with some markup and additional information about what happened.
-    # You might need to add some logic to deal with messages longer than the 4096 character limit.
-    update_str = update.to_dict() if isinstance(update, Update) else str(update)
-    message = (
-        f"Oops! An exception was raised while handling an update:\n"
-        f"<pre>update_str = {html.escape(json.dumps(update_str, indent=2, ensure_ascii=False))}"
-        "</pre>\n\n"
-        f"<pre>context.chat_data = {html.escape(str(context.chat_data))}</pre>\n\n"
-        f"<pre>context.user_data = {html.escape(str(context.user_data))}</pre>\n\n"
-        f"<pre>{html.escape(tb_string)}</pre>"
+    error_msg = (
+        f"Oops! An exception was raised while handling an update, check logs for more information."
     )
 
-    # Finally, send the message
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=message, parse_mode=ParseMode.HTML
-    )
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=error_msg)
 
 
 # Top level conversation callbacks
@@ -200,10 +171,7 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def new_chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
     global ChatGPT_instance
-    global application
     """Start a new chat."""
-    level = update.callback_query.data
-    context.user_data[CURRENT_LEVEL] = level
     ChatGPT_instance = ChatGPT(update, context, update.effective_user.username, update.effective_chat.id, application, logger)
     await ChatGPT_instance.run()
     return SELECTING_LEVEL
@@ -212,11 +180,6 @@ async def new_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global ImageGen_instance
     ImageGen_instance = ImageGen(update, context, update.effective_user.username, update.effective_chat.id, application, logger)
     await ImageGen_instance.run()
-
-# async def reset_convo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-#     context.user_data[START_OVER] = True
-#     await start(update=update, context=context)
-#     return 
 
 @logger("return back to main menu")
 async def back_to_main(update :Update, context: ContextTypes.DEFAULT_TYPE):
@@ -286,9 +249,6 @@ def main() -> None:
     )
     application.add_error_handler(error_handler)
 
-    ''' Sample command to instantiate error '''
-    application.add_handler(CommandHandler("bad_command", bad_command))
-    
     application.add_handler(conv_handler)
     # Run the bot until the user presses Ctrl-C
     application.run_polling()
