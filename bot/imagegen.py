@@ -16,7 +16,7 @@ from telegram.ext import (
     ContextTypes
 )
 import openai
-from bot.logger import UserActionLogger
+from logger import UserActionLogger
 
 WELCOME = "WELCOME"
 IMAGE_GEN = "IMAGE_GEN"

@@ -25,7 +25,7 @@ from chatgpt import ChatGPT
 from imagegen import ImageGen
 from typing import Any, Dict, Tuple
 from functools import wraps
-from bot.logger import UserActionLogger
+from logger import UserActionLogger
 from telegram.constants import ParseMode
 
 from telegram import __version__ as TG_VER

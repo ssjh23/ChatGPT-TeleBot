@@ -12,7 +12,7 @@ from telegram.ext import (
     ContextTypes,
     CommandHandler
 )
-from bot.logger import UserActionLogger
+from logger import UserActionLogger
 import openai
 
 CHAT_GPT = "CHATGPT"
