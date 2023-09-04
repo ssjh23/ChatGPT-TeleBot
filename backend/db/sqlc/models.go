@@ -4,11 +4,14 @@
 
 package db
 
-import ()
+import (
+	"time"
+)
 
 type User struct {
-	ID          int64    `json:"id"`
-	ChatID      string   `json:"chatId"`
-	Password    string   `json:"password"`
-	UserPrompts []string `json:"userPrompts"`
+	ID          int64     `json:"id"`
+	ChatID      string    `json:"chatId"`
+	Password    string    `json:"password"`
+	UserPrompts []string  `json:"userPrompts"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
