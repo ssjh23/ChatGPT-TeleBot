@@ -7,8 +7,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/lib/pq"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -17,7 +15,7 @@ INSERT INTO users (
     password
 ) VALUES (
     $1, $2
-) RETURNING id, chat_id, password, user_prompts
+) RETURNING id, chat_id, password, created_at
 `
 
 type CreateUserParams struct {
@@ -32,7 +30,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.ID,
 		&i.ChatID,
 		&i.Password,
-		pq.Array(&i.UserPrompts),
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -48,7 +46,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, chat_id, password, user_prompts FROM users
+SELECT id, chat_id, password, created_at FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -59,13 +57,13 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 		&i.ID,
 		&i.ChatID,
 		&i.Password,
-		pq.Array(&i.UserPrompts),
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, chat_id, password, user_prompts FROM users
+SELECT id, chat_id, password, created_at FROM users
 ORDER BY id
 LIMIT $1
 OFFSET $2
@@ -89,7 +87,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.ID,
 			&i.ChatID,
 			&i.Password,
-			pq.Array(&i.UserPrompts),
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -108,7 +106,7 @@ const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE users 
 SET password = $2
 WHERE id = $1
-RETURNING id, chat_id, password, user_prompts
+RETURNING id, chat_id, password, created_at
 `
 
 type UpdateUserPasswordParams struct {
@@ -123,7 +121,7 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 		&i.ID,
 		&i.ChatID,
 		&i.Password,
-		pq.Array(&i.UserPrompts),
+		&i.CreatedAt,
 	)
 	return i, err
 }

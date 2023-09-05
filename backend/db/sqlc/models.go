@@ -4,11 +4,22 @@
 
 package db
 
-import ()
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type Prompt struct {
+	ID        uuid.UUID `json:"id"`
+	Prompt    string    `json:"prompt"`
+	UserID    int64     `json:"userId"`
+	CreatedAt time.Time `json:"createdAt"`
+}
 
 type User struct {
-	ID          int64    `json:"id"`
-	ChatID      string   `json:"chatId"`
-	Password    string   `json:"password"`
-	UserPrompts []string `json:"userPrompts"`
+	ID        int64     `json:"id"`
+	ChatID    string    `json:"chatId"`
+	Password  string    `json:"password"`
+	CreatedAt time.Time `json:"createdAt"`
 }
