@@ -7,6 +7,12 @@ createdb:
 dropdb:
 	docker exec -it telebot_backend dropdb telebot_db
 
+migratecreate:
+	migrate create -ext sql -dir db/migration -seq init_schema
+
+migrateforce:
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5439/telebot_db?sslmode=disable" force ${version}
+
 migrateup: 
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5439/telebot_db?sslmode=disable" -verbose up
 
@@ -19,4 +25,4 @@ sqlc:
 test:
 	go test -v -cover ./...
 	
-.PHONY: postgres createddb dropdb migrateup migratedown sqlc test
+.PHONY: postgres createddb dropdb migrateup migratedown migrateforce sqlc test
