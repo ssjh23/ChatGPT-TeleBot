@@ -11,7 +11,24 @@ on:
 
 jobs:
 
-  build:
+  services:
+    # Label used to access the service container
+    postgres:
+      # Docker Hub image
+      image: postgres
+      # Provide the password for postgres
+      env:
+        POSTGRES_PASSWORD: secret
+        POSTGRES_USER: root
+        POSTGRES_DB: telebot_backend
+      # Set health checks to wait until postgres has started
+      options: >-
+        --health-cmd pg_isready
+        --health-interval 10s
+        --health-timeout 5s
+        --health-retries 5
+
+  Unit-Tests:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -20,6 +37,16 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.20'
+      
+    - name: Install golang-migrate
+      run: | 
+        $ curl -L hhttps://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz| tar xvz
+        sudo mv migrate.linux-amd64 /usr/bin/
+        which migrate
+        
+    - name: Run migrations
+      working-directory: ./backend
+      run: make migrateup
 
     - name: Test
       working-directory: ./backend
