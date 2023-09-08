@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-type Prompt struct {
+type ChatgptPrompt struct {
 	ID        int64     `json:"id"`
 	Prompt    string    `json:"prompt"`
 	UserID    int64     `json:"userId"`

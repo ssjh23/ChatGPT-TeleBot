@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomPrompt(t *testing.T) Prompt {
+func createRandomPrompt(t *testing.T) ChatgptPrompt {
 	testUser, err := testQueries.CreateUser(context.Background(), CreateUserParams{
 		ChatID: util.RandomChatID(20),
 		Password: util.RandomPassword(20),

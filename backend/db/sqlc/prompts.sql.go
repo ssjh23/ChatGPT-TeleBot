@@ -7,26 +7,24 @@ package db
 
 import (
 	"context"
-	"time"
 )
 
 const createPrompt = `-- name: CreatePrompt :one
-INSERT INTO prompts 
-(prompt, user_id, created_at)
+INSERT INTO chatgpt_prompts 
+(prompt, user_id)
 VALUES 
-($1, $2, $3) 
+($1, $2)
 RETURNING id, prompt, user_id, created_at
 `
 
 type CreatePromptParams struct {
-	Prompt    string    `json:"prompt"`
-	UserID    int64     `json:"userId"`
-	CreatedAt time.Time `json:"createdAt"`
+	Prompt string `json:"prompt"`
+	UserID int64  `json:"userId"`
 }
 
-func (q *Queries) CreatePrompt(ctx context.Context, arg CreatePromptParams) (Prompt, error) {
-	row := q.db.QueryRowContext(ctx, createPrompt, arg.Prompt, arg.UserID, arg.CreatedAt)
-	var i Prompt
+func (q *Queries) CreatePrompt(ctx context.Context, arg CreatePromptParams) (ChatgptPrompt, error) {
+	row := q.db.QueryRowContext(ctx, createPrompt, arg.Prompt, arg.UserID)
+	var i ChatgptPrompt
 	err := row.Scan(
 		&i.ID,
 		&i.Prompt,
@@ -37,7 +35,7 @@ func (q *Queries) CreatePrompt(ctx context.Context, arg CreatePromptParams) (Pro
 }
 
 const deletePrompts = `-- name: DeletePrompts :exec
-DELETE FROM prompts 
+DELETE FROM chatgpt_prompts 
 WHERE id = $1
 `
 
@@ -47,13 +45,13 @@ func (q *Queries) DeletePrompts(ctx context.Context, id int64) error {
 }
 
 const getPrompt = `-- name: GetPrompt :one
-SELECT id, prompt, user_id, created_at FROM prompts
+SELECT id, prompt, user_id, created_at FROM chatgpt_prompts
 WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetPrompt(ctx context.Context, id int64) (Prompt, error) {
+func (q *Queries) GetPrompt(ctx context.Context, id int64) (ChatgptPrompt, error) {
 	row := q.db.QueryRowContext(ctx, getPrompt, id)
-	var i Prompt
+	var i ChatgptPrompt
 	err := row.Scan(
 		&i.ID,
 		&i.Prompt,
@@ -64,7 +62,7 @@ func (q *Queries) GetPrompt(ctx context.Context, id int64) (Prompt, error) {
 }
 
 const listPrompts = `-- name: ListPrompts :many
-SELECT id, prompt, user_id, created_at FROM prompts
+SELECT id, prompt, user_id, created_at FROM chatgpt_prompts
 ORDER BY id
 LIMIT $1
 OFFSET $2
@@ -75,15 +73,15 @@ type ListPromptsParams struct {
 	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) ListPrompts(ctx context.Context, arg ListPromptsParams) ([]Prompt, error) {
+func (q *Queries) ListPrompts(ctx context.Context, arg ListPromptsParams) ([]ChatgptPrompt, error) {
 	rows, err := q.db.QueryContext(ctx, listPrompts, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Prompt
+	var items []ChatgptPrompt
 	for rows.Next() {
-		var i Prompt
+		var i ChatgptPrompt
 		if err := rows.Scan(
 			&i.ID,
 			&i.Prompt,
@@ -104,7 +102,7 @@ func (q *Queries) ListPrompts(ctx context.Context, arg ListPromptsParams) ([]Pro
 }
 
 const updatePrompt = `-- name: UpdatePrompt :one
-UPDATE prompts
+UPDATE chatgpt_prompts
 SET prompt = $2
 WHERE id = $1
 RETURNING id, prompt, user_id, created_at
@@ -115,9 +113,9 @@ type UpdatePromptParams struct {
 	Prompt string `json:"prompt"`
 }
 
-func (q *Queries) UpdatePrompt(ctx context.Context, arg UpdatePromptParams) (Prompt, error) {
+func (q *Queries) UpdatePrompt(ctx context.Context, arg UpdatePromptParams) (ChatgptPrompt, error) {
 	row := q.db.QueryRowContext(ctx, updatePrompt, arg.ID, arg.Prompt)
-	var i Prompt
+	var i ChatgptPrompt
 	err := row.Scan(
 		&i.ID,
 		&i.Prompt,

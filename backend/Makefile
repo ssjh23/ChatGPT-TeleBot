@@ -14,10 +14,10 @@ migrateforce:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5439/telebot_db?sslmode=disable" force ${version}
 
 migrateup: 
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5439/telebot_db?sslmode=disable" -verbose up
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5439/telebot_db?sslmode=disable" -verbose up ${version}
 
 migratedown:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5439/telebot_db?sslmode=disable" -verbose down
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5439/telebot_db?sslmode=disable" -verbose down ${version}
 
 sqlc:
 	sqlc generate
