@@ -39,3 +39,13 @@ func RandomPassword(n int) string {
 	return RandomString(n)
 }
 
+//RandomPrompt generates a random prompt
+func RandomPrompt(n int) string {
+	return RandomString(n)
+}
+
+//RandomID generates a random bigserial id
+func RandomID() int64 {
+	return rand.Int63()
+}
+
