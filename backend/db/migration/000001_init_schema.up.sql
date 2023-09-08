@@ -7,7 +7,7 @@ CREATE TABLE "users" (
 
 /* Create a table stores all string prompts with a UUID primary key, the user as a FK */   
 CREATE TABLE "prompts" (
-  "id" uuid PRIMARY KEY,
+  "id" bigserial PRIMARY KEY,
   "prompt" varchar NOT NULL,
   "user_id" bigint NOT NULL,
   "created_at" timestamp NOT NULL DEFAULT (now()),

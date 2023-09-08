@@ -6,12 +6,10 @@ package db
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Prompt struct {
-	ID        uuid.UUID `json:"id"`
+	ID        int64     `json:"id"`
 	Prompt    string    `json:"prompt"`
 	UserID    int64     `json:"userId"`
 	CreatedAt time.Time `json:"createdAt"`

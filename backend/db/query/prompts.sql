@@ -1,9 +1,9 @@
 
 -- name: CreatePrompt :one
 INSERT INTO prompts 
-(id, prompt, user_id, created_at)
+(prompt, user_id, created_at)
 VALUES 
-($1, $2, $3, $4) 
+($1, $2, $3) 
 RETURNING *;
 
 

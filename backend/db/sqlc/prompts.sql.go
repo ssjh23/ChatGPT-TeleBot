@@ -8,32 +8,24 @@ package db
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const createPrompt = `-- name: CreatePrompt :one
 INSERT INTO prompts 
-(id, prompt, user_id, created_at)
+(prompt, user_id, created_at)
 VALUES 
-($1, $2, $3, $4) 
+($1, $2, $3) 
 RETURNING id, prompt, user_id, created_at
 `
 
 type CreatePromptParams struct {
-	ID        uuid.UUID `json:"id"`
 	Prompt    string    `json:"prompt"`
 	UserID    int64     `json:"userId"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
 func (q *Queries) CreatePrompt(ctx context.Context, arg CreatePromptParams) (Prompt, error) {
-	row := q.db.QueryRowContext(ctx, createPrompt,
-		arg.ID,
-		arg.Prompt,
-		arg.UserID,
-		arg.CreatedAt,
-	)
+	row := q.db.QueryRowContext(ctx, createPrompt, arg.Prompt, arg.UserID, arg.CreatedAt)
 	var i Prompt
 	err := row.Scan(
 		&i.ID,
@@ -49,7 +41,7 @@ DELETE FROM prompts
 WHERE id = $1
 `
 
-func (q *Queries) DeletePrompts(ctx context.Context, id uuid.UUID) error {
+func (q *Queries) DeletePrompts(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deletePrompts, id)
 	return err
 }
@@ -59,7 +51,7 @@ SELECT id, prompt, user_id, created_at FROM prompts
 WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetPrompt(ctx context.Context, id uuid.UUID) (Prompt, error) {
+func (q *Queries) GetPrompt(ctx context.Context, id int64) (Prompt, error) {
 	row := q.db.QueryRowContext(ctx, getPrompt, id)
 	var i Prompt
 	err := row.Scan(
@@ -119,8 +111,8 @@ RETURNING id, prompt, user_id, created_at
 `
 
 type UpdatePromptParams struct {
-	ID     uuid.UUID `json:"id"`
-	Prompt string    `json:"prompt"`
+	ID     int64  `json:"id"`
+	Prompt string `json:"prompt"`
 }
 
 func (q *Queries) UpdatePrompt(ctx context.Context, arg UpdatePromptParams) (Prompt, error) {
