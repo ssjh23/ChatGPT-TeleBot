@@ -11,9 +11,12 @@ import (
 )
 
 func createRandomUser(t *testing.T) User {
+	hashedPassword, err := util.HashPassword(util.RandomPassword(20))
+	require.NoError(t, err)
+
 	arg := CreateUserParams{
 		ChatID: util.RandomChatID(20),
-		Password: util.RandomPassword(20),
+		Password: hashedPassword,
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -46,8 +49,14 @@ func TestGetUser(t *testing.T) {
 
 func TestDeleteAccount(t *testing.T) {
 	userOne := createRandomUser(t)
-	err := testQueries.DeleteUser(context.Background(), userOne.ID)
+	deletedUser, err := testQueries.DeleteUser(context.Background(), userOne.ID)
 	require.NoError(t, err)
+
+	require.NotEmpty(t, deletedUser)
+	require.Equal(t, userOne.ID, deletedUser.ID)
+	require.Equal(t, userOne.ChatID, deletedUser.ChatID)
+	require.Equal(t, userOne.Password, deletedUser.Password)
+	require.WithinDuration(t, userOne.CreatedAt, deletedUser.CreatedAt, time.Second)
 
 	userTwo, err := testQueries.GetUser(context.Background(), userOne.ID)
 	require.Error(t, err)
@@ -89,4 +98,5 @@ func TestUpdatePassword(t *testing.T) {
 	require.Equal(t, updatedPassword, updatedUserOne.Password)
 	require.Equal(t, updatedUserOne.ID, userOne.ID)
 	require.Equal(t, userOne.ChatID, updatedUserOne.ChatID)
+	require.WithinDuration(t, time.Now(), updatedUserOne.CreatedAt, time.Second)
 }

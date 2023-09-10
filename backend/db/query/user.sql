@@ -19,9 +19,11 @@ OFFSET $2;
 -- name: UpdateUserPassword :one
 UPDATE users 
 SET password = $2
+SET password_updated_at = now()
 WHERE id = $1
 RETURNING *;
 
--- name: DeleteUser :exec
+-- name: DeleteUser :one
 DELETE FROM users 
-WHERE id = $1;
+WHERE id = $1
+RETURNING *;

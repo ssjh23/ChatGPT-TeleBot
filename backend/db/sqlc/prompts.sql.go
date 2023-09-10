@@ -79,7 +79,7 @@ func (q *Queries) ListPrompts(ctx context.Context, arg ListPromptsParams) ([]Cha
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ChatgptPrompt
+	items := []ChatgptPrompt{}
 	for rows.Next() {
 		var i ChatgptPrompt
 		if err := rows.Scan(

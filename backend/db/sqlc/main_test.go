@@ -5,18 +5,20 @@ import (
 	"log"
 	"os"
 	"testing"
-	
-	_"github.com/lib/pq"
+
+	_ "github.com/lib/pq"
+	"github.com/ssjh23/Chatgpt-Telebot/util"
 )
 
-const (
-	dbDriver = "postgres"
-	dbSource = "postgresql://root:secret@localhost:5439/telebot_db?sslmode=disable"
-)
 var testQueries *Queries
 
 func TestMain(m *testing.M) {
-	conn, err := sql.Open(dbDriver, dbSource)
+	config, err := util.LoadConfig("../..")
+	if err != nil {
+		log.Fatal("Cannot load config file")
+	}
+	
+	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
 		log.Fatal("Connection to database FAILED")
 	}

@@ -10,9 +10,12 @@ import (
 )
 
 func createRandomPrompt(t *testing.T) ChatgptPrompt {
+	hashedPassword, err := util.HashPassword(util.RandomPassword(20))
+	require.NoError(t, err)
+
 	testUser, err := testQueries.CreateUser(context.Background(), CreateUserParams{
 		ChatID: util.RandomChatID(20),
-		Password: util.RandomPassword(20),
+		Password: hashedPassword,
 	})
 	require.NoError(t, err)
 	
