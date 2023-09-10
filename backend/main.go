@@ -4,19 +4,18 @@ import (
 	"database/sql"
 	"log"
 
+	_ "github.com/lib/pq"
 	"github.com/ssjh23/Chatgpt-Telebot/api"
 	db "github.com/ssjh23/Chatgpt-Telebot/db/sqlc"
-	_"github.com/lib/pq"
-)
-
-const (
-	dbDriver = "postgres"
-	dbSource = "postgresql://root:secret@localhost:5439/telebot_db?sslmode=disable"
-	serverAddress = "localhost:8080"
+	"github.com/ssjh23/Chatgpt-Telebot/util"
 )
 
 func main() {
-	conn, err := sql.Open(dbDriver, dbSource)
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Fatal("Cannot load config file")
+	}
+	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
 		log.Fatal("Connection to database FAILED")
 	}
@@ -24,7 +23,7 @@ func main() {
 	queries := db.New(conn)
 	server := api.NewServer(queries)
 
-	err = server.Start(serverAddress)
+	err = server.Start(config.ServerAddress)
 	if err != nil {
 		log.Fatal("Server FAILED TO START")
 	}
