@@ -19,6 +19,7 @@ OFFSET $2;
 -- name: UpdateUserPassword :one
 UPDATE users 
 SET password = $2
+SET password_updated_at = now()
 WHERE id = $1
 RETURNING *;
 
