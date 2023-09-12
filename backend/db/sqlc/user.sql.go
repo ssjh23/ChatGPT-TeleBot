@@ -15,7 +15,7 @@ INSERT INTO users (
     password
 ) VALUES (
     $1, $2
-) RETURNING id, chat_id, password, created_at
+) RETURNING id, chat_id, password, created_at, password_updated_at
 `
 
 type CreateUserParams struct {
@@ -31,6 +31,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.ChatID,
 		&i.Password,
 		&i.CreatedAt,
+		&i.PasswordUpdatedAt,
 	)
 	return i, err
 }
@@ -38,7 +39,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 const deleteUser = `-- name: DeleteUser :one
 DELETE FROM users 
 WHERE id = $1
-RETURNING id, chat_id, password, created_at
+RETURNING id, chat_id, password, created_at, password_updated_at
 `
 
 func (q *Queries) DeleteUser(ctx context.Context, id int64) (User, error) {
@@ -49,29 +50,31 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) (User, error) {
 		&i.ChatID,
 		&i.Password,
 		&i.CreatedAt,
+		&i.PasswordUpdatedAt,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, chat_id, password, created_at FROM users
-WHERE id = $1 LIMIT 1
+SELECT id, chat_id, password, created_at, password_updated_at FROM users
+WHERE chat_id = $1 LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUser, id)
+func (q *Queries) GetUser(ctx context.Context, chatID string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUser, chatID)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.ChatID,
 		&i.Password,
 		&i.CreatedAt,
+		&i.PasswordUpdatedAt,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, chat_id, password, created_at FROM users
+SELECT id, chat_id, password, created_at, password_updated_at FROM users
 ORDER BY id
 LIMIT $1
 OFFSET $2
@@ -96,6 +99,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.ChatID,
 			&i.Password,
 			&i.CreatedAt,
+			&i.PasswordUpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -112,9 +116,9 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 
 const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE users 
-SET password = $2
+SET (password, password_updated_at) = ($2, NOW())
 WHERE id = $1
-RETURNING id, chat_id, password, created_at
+RETURNING id, chat_id, password, created_at, password_updated_at
 `
 
 type UpdateUserPasswordParams struct {
@@ -130,6 +134,7 @@ func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPassword
 		&i.ChatID,
 		&i.Password,
 		&i.CreatedAt,
+		&i.PasswordUpdatedAt,
 	)
 	return i, err
 }

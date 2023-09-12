@@ -16,8 +16,9 @@ type ChatgptPrompt struct {
 }
 
 type User struct {
-	ID        int64     `json:"id"`
-	ChatID    string    `json:"chatId"`
-	Password  string    `json:"password"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID                int64     `json:"id"`
+	ChatID            string    `json:"chatId"`
+	Password          string    `json:"password"`
+	CreatedAt         time.Time `json:"createdAt"`
+	PasswordUpdatedAt time.Time `json:"passwordUpdatedAt"`
 }

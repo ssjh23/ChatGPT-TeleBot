@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
@@ -16,12 +17,12 @@ type createUserRequest struct {
 }
 
 type getUserRequest struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+	ChatID string `uri:"chatId" binding:"required"`
 }
 
 type listUsersRequest struct {
-	PageID int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+	PageID int32 `form:"pageId" binding:"required,min=1"`
+	PageSize int32 `form:"pageSize" binding:"required,min=5,max=10"`
 }
 
 type updateUserPasswordRequestID struct {
@@ -36,16 +37,24 @@ type deleteUserRequest struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-type createUserResponse struct {
-	ID int64 `json:"id"`
-	ChatID string `json:"chatId"`
-	CreatedAt int64 `json:"createdAt"`
+type userResponse struct {
+	ChatID            string    `json:"chatId"`
+	CreatedAt         time.Time `json:"createdAt"`
+	PasswordUpdatedAt time.Time `json:"passwordUpdatedAt"`
 }
 
 type updateUserPasswordResponse struct {
 	ID int64 `json:"id"`
 	ChatID string `json:"chatId"`
 	Message string `json:"message"`
+}
+
+func newUserResponse(user db.User) userResponse {
+	return userResponse{
+		ChatID: user.ChatID,
+		CreatedAt: user.CreatedAt,
+		PasswordUpdatedAt: user.PasswordUpdatedAt,
+	}
 }
 
 /* Server method that creates user */
@@ -76,11 +85,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	resp := createUserResponse{
-		ID: user.ID,
-		ChatID: user.ChatID,
-		CreatedAt: user.CreatedAt.Unix(),
-	}
+	resp := newUserResponse(user)
 	ctx.JSON(http.StatusOK, resp)
 }
 
@@ -91,7 +96,7 @@ func (server *Server) getUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	user, err := server.queries.GetUser(ctx, req.ID)
+	user, err := server.queries.GetUser(ctx, req.ChatID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -171,4 +176,6 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, deletedUser)
 }
+
+
 	

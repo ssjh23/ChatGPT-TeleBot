@@ -37,7 +37,7 @@ func TestCreateUser(t *testing.T) {
 
 func TestGetUser(t *testing.T) {
 	user1 := createRandomUser(t)
-	user2, err := testQueries.GetUser(context.Background(), user1.ID)
+	user2, err := testQueries.GetUser(context.Background(), user1.ChatID)
 	require.NoError(t, err)
 	require.NotEmpty(t, user2)
 
@@ -58,7 +58,7 @@ func TestDeleteAccount(t *testing.T) {
 	require.Equal(t, userOne.Password, deletedUser.Password)
 	require.WithinDuration(t, userOne.CreatedAt, deletedUser.CreatedAt, time.Second)
 
-	userTwo, err := testQueries.GetUser(context.Background(), userOne.ID)
+	userTwo, err := testQueries.GetUser(context.Background(), userOne.ChatID)
 	require.Error(t, err)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
 	require.Empty(t, userTwo)
