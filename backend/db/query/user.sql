@@ -8,7 +8,7 @@ INSERT INTO users (
 
 -- name: GetUser :one
 SELECT * FROM users
-WHERE id = $1 LIMIT 1;
+WHERE chat_id = $1 LIMIT 1;
 
 -- name: ListUsers :many
 SELECT * FROM users
@@ -18,12 +18,11 @@ OFFSET $2;
 
 -- name: UpdateUserPassword :one
 UPDATE users 
-SET password = $2
-SET password_updated_at = now()
-WHERE id = $1
+SET (password, password_updated_at) = ($2, NOW())
+WHERE chat_id = $1
 RETURNING *;
 
 -- name: DeleteUser :one
 DELETE FROM users 
-WHERE id = $1
+WHERE chat_id = $1
 RETURNING *;

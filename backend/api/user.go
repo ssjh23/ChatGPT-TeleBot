@@ -2,11 +2,14 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 	db "github.com/ssjh23/Chatgpt-Telebot/db/sqlc"
+	"github.com/ssjh23/Chatgpt-Telebot/token"
 	"github.com/ssjh23/Chatgpt-Telebot/util"
 )
 
@@ -16,36 +19,44 @@ type createUserRequest struct {
 }
 
 type getUserRequest struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+	ChatID string `uri:"chatId" binding:"required"`
 }
 
 type listUsersRequest struct {
-	PageID int32 `form:"page_id" binding:"required,min=1"`
-	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+	PageID int32 `form:"pageId" binding:"required,min=1"`
+	PageSize int32 `form:"pageSize" binding:"required,min=5,max=10"`
 }
 
 type updateUserPasswordRequestID struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+	ChatID string `uri:"chatId" binding:"required"`
 }
 
 type updateUserPasswordRequestPassword struct {
 	Password string `json:"password" binding:"required"`
 }
 
-type deleteUserRequest struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
-}
-
-type createUserResponse struct {
-	ID int64 `json:"id"`
-	ChatID string `json:"chatId"`
-	CreatedAt int64 `json:"createdAt"`
+type userResponse struct {
+	ChatID            string    `json:"chatId"`
+	CreatedAt         time.Time `json:"createdAt"`
+	PasswordUpdatedAt time.Time `json:"passwordUpdatedAt"`
 }
 
 type updateUserPasswordResponse struct {
 	ID int64 `json:"id"`
 	ChatID string `json:"chatId"`
 	Message string `json:"message"`
+}
+
+type deleteUserRequest struct {
+	ChatID string `uri:"chatId" binding:"required"`
+}
+
+func newUserResponse(user db.User) userResponse {
+	return userResponse{
+		ChatID: user.ChatID,
+		CreatedAt: user.CreatedAt,
+		PasswordUpdatedAt: user.PasswordUpdatedAt,
+	}
 }
 
 /* Server method that creates user */
@@ -76,11 +87,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	resp := createUserResponse{
-		ID: user.ID,
-		ChatID: user.ChatID,
-		CreatedAt: user.CreatedAt.Unix(),
-	}
+	resp := newUserResponse(user)
 	ctx.JSON(http.StatusOK, resp)
 }
 
@@ -91,7 +98,14 @@ func (server *Server) getUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	user, err := server.queries.GetUser(ctx, req.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if req.ChatID != authPayload.ChatID {
+		err := errors.New("account does not belong to authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	user, err := server.queries.GetUser(ctx, req.ChatID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -134,13 +148,19 @@ func (server *Server) updateUserPassword(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if reqID.ChatID != authPayload.ChatID {
+		err := errors.New("account does not belong to authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
 	updatedHashedPassword, err := util.HashPassword(reqPassword.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 	arg := db.UpdateUserPasswordParams{
-		ID: reqID.ID,
+		ChatID: reqID.ChatID,
 		Password: updatedHashedPassword,
 	}
 	user, err := server.queries.UpdateUserPassword(ctx, arg)
@@ -164,11 +184,19 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	deletedUser, err := server.queries.DeleteUser(ctx, req.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if req.ChatID != authPayload.ChatID {
+		err := errors.New("account does not belong to authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+	deletedUser, err := server.queries.DeleteUser(ctx, authPayload.ChatID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 	ctx.JSON(http.StatusOK, deletedUser)
 }
+
+
 	

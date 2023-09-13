@@ -1,0 +1,189 @@
+{
+	"info": {
+		"_postman_id": "a140b38f-af76-4ac5-a9de-954088732037",
+		"name": "Telebot API",
+		"description": "Endpoints for ChatGPT-Telebot",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "24051749"
+	},
+	"item": [
+		{
+			"name": "User Routes",
+			"item": [
+				{
+					"name": "Add User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"chatId\":\"TestID\",\n    \"password\": \"TestPassword\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/users",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get User",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/users/:ID",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"users",
+								":ID"
+							],
+							"variable": [
+								{
+									"key": "ID",
+									"value": "30"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Multiple Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/users?pageId =5&pageSize=5",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "pageId ",
+									"value": "5"
+								},
+								{
+									"key": "pageSize",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Password",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password\":\"Updated_Password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/users/:ID/password",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"users",
+								":ID",
+								"password"
+							],
+							"variable": [
+								{
+									"key": "ID",
+									"value": "29"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"chatId\": \"TestID\",\n    \"password\": \"TestPassword\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseURL}}/users/login",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"users",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "v2.local.XxR-keXHHUpMFFVXXN_HSfevG-4qBSTzjVtjWKQy7UZb1CxFJSs7v37yFLvKHJaps_YLtbWd0W0Xd6HktzgqkhuO4nljN7yMo3Mbp8Gna94Feg7Pb-l932iK4W49NJqjQNlzqlvCzShHydLjdLVyeIUYRTt4R7xLYNW4nobe1brf0FoNqDYY5ZIJf-KjHDcmZZWygjkWE0ZZ8gsoxPTN9jvyfZkth6RIZVT0opvw71anW4JvQhrFhHkxx1kFHy5vJ2CDguNb6g.bnVsbA",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseURL}}/users/:chatId",
+							"host": [
+								"{{baseURL}}"
+							],
+							"path": [
+								"users",
+								":chatId"
+							],
+							"variable": [
+								{
+									"key": "chatId",
+									"value": "TestID"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Routes for users resource\n\nGET User, PATCH Password, DELETE User require Bearer PASETO Token from POST Login endpoint"
+		}
+	]
+}
