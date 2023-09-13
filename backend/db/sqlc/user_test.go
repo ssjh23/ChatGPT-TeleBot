@@ -49,7 +49,7 @@ func TestGetUser(t *testing.T) {
 
 func TestDeleteAccount(t *testing.T) {
 	userOne := createRandomUser(t)
-	deletedUser, err := testQueries.DeleteUser(context.Background(), userOne.ID)
+	deletedUser, err := testQueries.DeleteUser(context.Background(), userOne.ChatID)
 	require.NoError(t, err)
 
 	require.NotEmpty(t, deletedUser)
@@ -87,7 +87,7 @@ func TestUpdatePassword(t *testing.T) {
 	userOne := createRandomUser(t)
 	updatedPassword := util.RandomPassword(20)
 	arg := UpdateUserPasswordParams {
-		ID: userOne.ID,
+		ChatID: userOne.ChatID,
 		Password: updatedPassword,
 	}
 	updatedUserOne, err := testQueries.UpdateUserPassword(context.Background(), arg)

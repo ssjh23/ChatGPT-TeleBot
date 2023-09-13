@@ -38,12 +38,12 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 
 const deleteUser = `-- name: DeleteUser :one
 DELETE FROM users 
-WHERE id = $1
+WHERE chat_id = $1
 RETURNING id, chat_id, password, created_at, password_updated_at
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id int64) (User, error) {
-	row := q.db.QueryRowContext(ctx, deleteUser, id)
+func (q *Queries) DeleteUser(ctx context.Context, chatID string) (User, error) {
+	row := q.db.QueryRowContext(ctx, deleteUser, chatID)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -117,17 +117,17 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 const updateUserPassword = `-- name: UpdateUserPassword :one
 UPDATE users 
 SET (password, password_updated_at) = ($2, NOW())
-WHERE id = $1
+WHERE chat_id = $1
 RETURNING id, chat_id, password, created_at, password_updated_at
 `
 
 type UpdateUserPasswordParams struct {
-	ID       int64  `json:"id"`
+	ChatID   string `json:"chatId"`
 	Password string `json:"password"`
 }
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUserPassword, arg.ID, arg.Password)
+	row := q.db.QueryRowContext(ctx, updateUserPassword, arg.ChatID, arg.Password)
 	var i User
 	err := row.Scan(
 		&i.ID,

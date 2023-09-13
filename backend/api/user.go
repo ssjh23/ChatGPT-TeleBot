@@ -2,12 +2,14 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
 	db "github.com/ssjh23/Chatgpt-Telebot/db/sqlc"
+	"github.com/ssjh23/Chatgpt-Telebot/token"
 	"github.com/ssjh23/Chatgpt-Telebot/util"
 )
 
@@ -26,15 +28,11 @@ type listUsersRequest struct {
 }
 
 type updateUserPasswordRequestID struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
+	ChatID string `uri:"chatId" binding:"required"`
 }
 
 type updateUserPasswordRequestPassword struct {
 	Password string `json:"password" binding:"required"`
-}
-
-type deleteUserRequest struct {
-	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
 type userResponse struct {
@@ -47,6 +45,10 @@ type updateUserPasswordResponse struct {
 	ID int64 `json:"id"`
 	ChatID string `json:"chatId"`
 	Message string `json:"message"`
+}
+
+type deleteUserRequest struct {
+	ChatID string `uri:"chatId" binding:"required"`
 }
 
 func newUserResponse(user db.User) userResponse {
@@ -96,6 +98,13 @@ func (server *Server) getUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if req.ChatID != authPayload.ChatID {
+		err := errors.New("account does not belong to authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
 	user, err := server.queries.GetUser(ctx, req.ChatID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -139,13 +148,19 @@ func (server *Server) updateUserPassword(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if reqID.ChatID != authPayload.ChatID {
+		err := errors.New("account does not belong to authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
 	updatedHashedPassword, err := util.HashPassword(reqPassword.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 	arg := db.UpdateUserPasswordParams{
-		ID: reqID.ID,
+		ChatID: reqID.ChatID,
 		Password: updatedHashedPassword,
 	}
 	user, err := server.queries.UpdateUserPassword(ctx, arg)
@@ -169,7 +184,13 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	deletedUser, err := server.queries.DeleteUser(ctx, req.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if req.ChatID != authPayload.ChatID {
+		err := errors.New("account does not belong to authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+	deletedUser, err := server.queries.DeleteUser(ctx, authPayload.ChatID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return

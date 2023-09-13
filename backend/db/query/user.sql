@@ -19,10 +19,10 @@ OFFSET $2;
 -- name: UpdateUserPassword :one
 UPDATE users 
 SET (password, password_updated_at) = ($2, NOW())
-WHERE id = $1
+WHERE chat_id = $1
 RETURNING *;
 
 -- name: DeleteUser :one
 DELETE FROM users 
-WHERE id = $1
+WHERE chat_id = $1
 RETURNING *;

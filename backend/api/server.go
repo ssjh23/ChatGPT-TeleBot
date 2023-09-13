@@ -37,17 +37,18 @@ func (server *Server) setupRouter() {
 	router := gin.Default()
 	/* Server routes for user endpoints */
 	router.POST("/users", server.createUser)
-	router.POST("/users/login", server.loginUser)
-	router.GET("/users/:id", server.getUser)
+	router.POST("/users/login",  server.loginUser)
 	router.GET("/users", server.listUsers)
-	router.PATCH("/users/:id/password", server.updateUserPassword)
-	router.DELETE("/users/:id", server.deleteUser)
+
+	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	authRoutes.GET("/users/:chatId", server.getUser)
+	authRoutes.PATCH("/users/:chatId/password", server.updateUserPassword)
+	authRoutes.DELETE("/users/:chatId", server.deleteUser)
 	// router.POST("/prompts", server.createPrompt)
 	// router.GET("/prompts/:id", server.getPrompt)
 	// router.DELETE("/prompts/:id", server.deletePrompt)
-
 	server.router = router
-}
+} 
 
 /* Start runs the HTTP server on a specific address. */
 func (server *Server) Start(address string) error {
