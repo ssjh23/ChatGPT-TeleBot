@@ -30,6 +30,7 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
 
     - name: Build, tag, and push docker image to Amazon ECR
+      working-directory: ./app/backend
       env:
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         REPOSITORY: chatgpt_telebot
