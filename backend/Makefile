@@ -30,5 +30,8 @@ test:
 
 server: 
 	go run main.go
+
+prodmigrateup:
+	migrate -path db/migration -database "postgresql://root:telebot_db_password@telebot-db.cwsf8f0qkbmn.ap-southeast-1.rds.amazonaws.com:5432/telebot_db" -verbose up ${version}
 	
-.PHONY: postgres createddb dropdb migratecreate migrateup migratedown migrateforce sqlc test
+.PHONY: postgres createddb dropdb migratecreate migrateup migratedown migrateforce sqlc test server prodmigrateup
