@@ -23,13 +23,6 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
-      
-    - id: install-aws-cli
-      uses: unfor19/install-aws-cli-action@v1
-      with:
-        version: 2                         # default
-        verbose: false                     # default
-        arch: amd64                        # allowed values: amd64, arm64
 
     - name: Login to Amazon ECR
       id: login-ecr
@@ -46,7 +39,7 @@ jobs:
       with:
        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-       AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
        SECRET_NAME: telebot_db_prod
        OUTPUT_PATH: 'app.env' # optional
 
