@@ -41,11 +41,14 @@ jobs:
     - name: Read file contents
       run: cat app.env
     
-    - name: Configure AWS Secrets Manager
-      uses: muchobien/configure-aws-secrets-manager@v1
+    - name: Export ENV from AWS SecretManager
+      uses: say8425/aws-secrets-manager-actions@v2
       with:
-        secret-id: telebot_db_prod
-        file-path: app.env 
+       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+       AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+       SECRET_NAME: telebot_db_prod
+       OUTPUT_PATH: 'app.env' # optional
 
     - name: Read file contents
       run: cat app.env
