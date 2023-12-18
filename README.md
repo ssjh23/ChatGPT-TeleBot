@@ -63,4 +63,4 @@ migrate -path db/migration -database "postgresql://root:secret@localhost:5432/te
 #### Step 2 (Optional): Setting up of Dbeaver
 This is dependent on what database management GUI you are using, if you plan to use any in the first place. This is setup will be using
 DBeaver, but should be similar to other tools.
-1. 
+
