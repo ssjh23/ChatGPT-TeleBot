@@ -37,12 +37,12 @@ jobs:
       working-directory: ./backend
       run: cat app.env
 
-    # - name: Build, tag, and push docker image to Amazon ECR
-    #   working-directory: ./backend
-    #   env:
-    #     REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-    #     REPOSITORY: chatgpt-telebot
-    #     IMAGE_TAG: ${{ github.sha }}
-    #   run: |
-    #     docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-    #     docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+    - name: Build, tag, and push docker image to Amazon ECR
+      working-directory: ./backend
+      env:
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: chatgpt-telebot
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        DOCKER_BUILDKIT=0 docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
+        docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
