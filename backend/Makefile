@@ -16,8 +16,11 @@ migratecreate:
 migrateforce:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/telebot_db?sslmode=disable" force ${version}
 
-migrateup: 
+migrateuplocal: 
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/telebot_db?sslmode=disable" -verbose up ${version}
+
+migrateupprod: 
+	migrate -path db/migration -database "postgresql://root:Oi1j3O9dVnf2QsYWkCo7@telebot-db.cwsf8f0qkbmn.ap-southeast-1.rds.amazonaws.com:5432/telebotdb?sslmode=disable" -verbose up ${version}
 
 migratedown:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/telebot_db?sslmode=disable" -verbose down ${version}
