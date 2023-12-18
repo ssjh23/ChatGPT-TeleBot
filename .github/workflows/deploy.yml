@@ -41,8 +41,11 @@ jobs:
     - name: Read file contents
       run: cat app.env
     
-    - name: Load secrets and save to app.env
-      run: aws secretsmanager get-secret-value --secret-id telebot_db_prod --query SecretString --output text|jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env
+    - name: Configure AWS Secrets Manager
+      uses: muchobien/configure-aws-secrets-manager@v1
+      with:
+        secret-id: telebot_db_prod
+        file-path: app.env 
 
     - name: Read file contents
       run: cat app.env
