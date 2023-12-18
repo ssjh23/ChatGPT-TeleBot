@@ -50,7 +50,7 @@ jobs:
 
     - name: Run migrations
       working-directory: ./backend
-      run: make migrateup
+      run: make migrateuplocal
 
     - name: Test
       working-directory: ./backend

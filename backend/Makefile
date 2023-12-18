@@ -1,5 +1,8 @@
 postgres:
-	docker run --name telebot_db --network telebot_db -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
+	docker run --name telebot_db --network telebot_network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
+
+network:
+	docker network create telebot_network
 
 backend:
 	docker run --network telebot --name telebot_backend -p 8080:8080 -e DB_SOURCE="postgresql://root:secret@telebot_db:5432/telebot_db?sslmode=disable" telebot_backend:latest
@@ -16,8 +19,11 @@ migratecreate:
 migrateforce:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/telebot_db?sslmode=disable" force ${version}
 
-migrateup: 
+migrateuplocal: 
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/telebot_db?sslmode=disable" -verbose up ${version}
+
+migrateupprod: 
+	migrate -path db/migration -database "postgresql://root:Oi1j3O9dVnf2QsYWkCo7@telebot-db.cwsf8f0qkbmn.ap-southeast-1.rds.amazonaws.com:5432/telebotdb?sslmode=disable" -verbose up ${version}
 
 migratedown:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/telebot_db?sslmode=disable" -verbose down ${version}
@@ -26,7 +32,7 @@ sqlc:
 	sqlc generate
 
 test:
-	go test -v -cover ./...
+	go test -count=1 -v -cover ./...
 
 server: 
 	go run main.go
