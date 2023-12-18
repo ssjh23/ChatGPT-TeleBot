@@ -16,6 +16,9 @@ jobs:
   build:
     name: Build image
     runs-on: ubuntu-latest
+    defaults:
+      run: 
+        working-directory: ./backend
 
     steps:
     - name: Checkout repo
@@ -30,15 +33,12 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
     
     - name: Load secrets and save to app.env
-      working-directory: ./backend
       run: aws secretsmanager get-secret-value --secret-id telebot_db_prod --query SecretString --output text|jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env
 
     - name: Read file contents
-      working-directory: ./backend
       run: cat app.env
 
     - name: Build, tag, and push docker image to Amazon ECR
-      working-directory: ./backend
       env:
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         REPOSITORY: chatgpt-telebot
