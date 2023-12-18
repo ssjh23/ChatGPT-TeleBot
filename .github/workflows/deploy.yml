@@ -31,17 +31,12 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          
     - name: Read file contents
       run: cat app.env
     
     - name: Export ENV from AWS SecretManager
-      uses: say8425/aws-secrets-manager-actions@v2
-      with:
-       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-       AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
-       SECRET_NAME: telebot_db_prod
-       OUTPUT_PATH: 'app.env' # optional
+      run: aws secretsmanager get-secret-value --secret-id telebot_db_prod --query SecretString --output text|jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env
 
     - name: Read file contents
       run: cat app.env
