@@ -33,6 +33,11 @@ jobs:
       working-directory: ./backend
       run: aws secretsmanager get-secret-value --secret-id telebot_db_prod --query SecretString --output text|jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env
 
+    - name: Read file contents
+      uses: andstor/file-reader-action@v1
+      with:
+        path: "./backend/app.env"
+
     - name: Build, tag, and push docker image to Amazon ECR
       working-directory: ./backend
       env:
