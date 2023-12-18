@@ -34,6 +34,7 @@ jobs:
       run: aws secretsmanager get-secret-value --secret-id telebot_db_prod --query SecretString --output text|jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env
 
     - name: Build, tag, and push docker image to Amazon ECR
+      working-directory: ./backend
       env:
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         REPOSITORY: chatgpt_telebot
