@@ -1,4 +1,4 @@
-# Chatgpt Telegram Bot 
+# ChatGPT Telegram Bot 
 ## Backend
 ### Local Setup 
 #### Pre-requisites
